@@ -1,0 +1,59 @@
+---
+import type { UnitHp } from '../lib/db';
+import { hargaTercoret } from '../lib/db';
+import { rupiah, gabung } from '../lib/format';
+import { fotoSrc } from '../lib/foto';
+import KondisiBadge from './KondisiBadge.astro';
+
+interface Props {
+  unit: UnitHp;
+}
+
+const { unit } = Astro.props;
+const coret = hargaTercoret(unit);
+const fotoUtama = unit.foto[0] ?? null;
+const ringkas = gabung([unit.kapasitas, unit.ram]);
+---
+
+<a
+  href={`/hp/${unit.slug}`}
+  class="group flex flex-col border-r border-b border-garis hover:bg-stone-100"
+  aria-label={`Lihat ${unit.nama}, ${rupiah(unit.harga)}`}
+>
+  <div class="aspect-[4/5] overflow-hidden bg-stone-100">
+    {
+      fotoUtama && (
+        <img
+          src={fotoSrc(fotoUtama, 'thumb')}
+          alt={`Foto ${unit.nama}: ${unit.warna}`}
+          loading="lazy"
+          decoding="async"
+          width="400"
+          height="500"
+          class="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        />
+      )
+    }
+  </div>
+  <div class="flex flex-col gap-1.5 p-4">
+    <div class="flex items-center justify-between gap-2">
+      <KondisiBadge kondisi={unit.kondisi} />
+      {ringkas && <span class="text-xs text-stone-600">{ringkas}</span>}
+    </div>
+    <h3 class="text-sm font-semibold text-stone-900">{unit.nama}</h3>
+    <div class="flex items-baseline gap-2">
+      {
+        coret ? (
+          <span class="text-sm font-bold text-aksi-teks">{rupiah(unit.harga)}</span>
+        ) : (
+          <span class="text-sm font-bold text-stone-900">{rupiah(unit.harga)}</span>
+        )
+      }
+      {
+        coret && (
+          <span class="text-xs text-stone-500 line-through">{rupiah(coret)}</span>
+        )
+      }
+    </div>
+  </div>
+</a>

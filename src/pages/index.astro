@@ -1,0 +1,66 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { listUnits, ambilSite } from '../lib/db';
+import { linkWa } from '../data/site';
+import UnitHpCard from '../components/UnitHpCard.astro';
+
+const semua = listUnits();
+const unitTersedia = semua.filter((u) => u.tersedia);
+const site = ambilSite();
+const waUmum = linkWa(undefined, site);
+---
+
+<BaseLayout>
+  <section class="seks-luas mx-auto max-w-5xl px-4 sm:px-6">
+    <div class="grid gap-8 border-b border-garis pb-10 md:grid-cols-[1.4fr_1fr] md:gap-12">
+      <div class="flex flex-col gap-4">
+        <h1 class="judul-hero text-stone-900">HP bekas yang kondisinya dipasang apa adanya.</h1>
+        <p class="max-w-xl text-base text-stone-600 prosa">
+          {site.tagline} Setiap unit ditulis detail: kondisi fisik, baterai, dan kekurangannya.
+          Cek halaman unit lalu tanya lewat WhatsApp.
+        </p>
+      </div>
+      <div class="flex flex-col justify-end gap-3 md:text-right">
+        {
+          unitTersedia.length > 0 && (
+            <p class="text-sm text-stone-600">{unitTersedia.length} unit tersedia sekarang.</p>
+          )
+        }
+        {
+          waUmum && (
+            <a
+              href={waUmum}
+              class="target-sentuh inline-flex w-full items-center justify-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800 md:w-auto"
+            >
+              Tanya stok terbaru
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <section id="katalog" class="seks-luas mx-auto max-w-5xl px-4 sm:px-6">
+    <div class="mb-8 flex flex-col gap-1">
+      <h2 class="kepala-seksi text-stone-900">Katalog</h2>
+      <p class="text-sm text-stone-600">
+        Paling murah dulu. Label kondisi tiap unit dijelaskan di halaman detailnya.
+      </p>
+    </div>
+
+    {
+      unitTersedia.length > 0 ? (
+        <div class="grid grid-cols-2 gap-0 border-t border-l border-garis md:grid-cols-3 lg:grid-cols-4">
+          {unitTersedia.map((unit) => <UnitHpCard unit={unit} />)}
+        </div>
+      ) : (
+        <div class="rounded-md border border-garis bg-stone-100 p-10 text-center">
+          <p class="font-semibold text-stone-900">Belum ada unit yang tersedia.</p>
+          <p class="mt-1 text-sm text-stone-600">
+            Semua unit sedang habis atau belum dipasang. Cek kembali nanti.
+          </p>
+        </div>
+      )
+    }
+  </section>
+</BaseLayout>

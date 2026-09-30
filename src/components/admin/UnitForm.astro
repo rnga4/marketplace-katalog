@@ -1,0 +1,161 @@
+---
+import { PILIHAN_KONDISI } from '../../lib/forms';
+import type { UnitHp, Kondisi } from '../../lib/db';
+import { fotoSrc } from '../../lib/foto';
+
+interface Props {
+  csrf: string;
+  action: string;
+  tombolLabel: string;
+  nilai?: Partial<UnitHp>;
+  gantiSlug?: boolean;
+}
+
+const { csrf, action, tombolLabel, nilai = {}, gantiSlug = true } = Astro.props;
+const kondisi = (nilai.kondisi ?? 'mulus') as Kondisi;
+const textareaList = (arr?: string[]) => (arr && arr.length ? arr.join('\n') : '');
+const fotoTerpilih = nilai.foto ?? [];
+---
+
+<form method="post" action={action} enctype="multipart/form-data" class="flex flex-col gap-6">
+  <input type="hidden" name="csrf" value={csrf} />
+
+  <fieldset class="flex flex-col gap-3">
+    <legend class="text-sm font-bold text-stone-900">Identitas unit</legend>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Nama <b class="text-red-800">*</b></span>
+        <input name="nama" required value={nilai.nama ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Slug (URL)</span>
+        {
+          gantiSlug ? (
+            <input name="slug" placeholder="otomatis dari nama" value={nilai.slug ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
+          ) : (
+            <input name="slug" value={nilai.slug ?? ''} disabled class="target-sentuh rounded-md border border-stone-200 bg-stone-100 px-3 text-sm text-stone-600" />
+          )
+        }
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Merk</span>
+        <input name="merk" value={nilai.merk ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Seri</span>
+        <input name="seri" value={nilai.seri ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Kapasitas</span>
+        <input name="kapasitas" placeholder="128 GB" value={nilai.kapasitas ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">RAM</span>
+        <input name="ram" placeholder="8 GB" value={nilai.ram ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Warna</span>
+        <input name="warna" value={nilai.warna ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Tahun rilis</span>
+        <input name="tahunRilis" type="number" min="2000" max="2030" value={nilai.tahunRilis?.toString() ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset class="flex flex-col gap-3">
+    <legend class="text-sm font-bold text-stone-900">Harga & status</legend>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Harga jual (Rp) <b class="text-red-800">*</b></span>
+        <input name="harga" required inputmode="numeric" value={nilai.harga?.toString() ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Harga coret (Rp, saat promo)</span>
+        <input name="hargaAsli" inputmode="numeric" value={nilai.hargaAsli?.toString() ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Kondisi</span>
+        <select name="kondisi" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none">
+          {
+            PILIHAN_KONDISI.map((k) => (
+              <option value={k.nilai} selected={kondisi === k.nilai}>{k.label}</option>
+            ))
+          }
+        </select>
+      </label>
+      <label class="target-sentuh flex items-center gap-2 self-end rounded-md border border-garis px-3">
+        <input type="checkbox" name="tersedia" checked={nilai.tersedia !== false} class="size-4" />
+        <span class="text-sm font-medium text-stone-900">Tersedia untuk dijual</span>
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset class="flex flex-col gap-3">
+    <legend class="text-sm font-bold text-stone-900">Spesifikasi ringkas</legend>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Layar</span>
+        <input name="layar" value={nilai.layar ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-stone-900">Baterai</span>
+        <input name="baterai" value={nilai.baterai ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset class="flex flex-col gap-3">
+    <legend class="text-sm font-bold text-stone-900">Keterangan</legend>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Deskripsi</span>
+      <textarea name="deskripsi" rows="4" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none">{nilai.deskripsi ?? ''}</textarea>
+    </label>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Catatan kondisi (satu per baris)</span>
+      <textarea name="catatan" rows="4" placeholder="Baterai health 92%
+Lecet halus di pojok kiri" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none">{textareaList(nilai.catatan)}</textarea>
+    </label>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Kelengkapan (satu per baris)</span>
+      <textarea name="kelengkapan" rows="3" placeholder="Unit HP
+Kabel USB-C" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none">{textareaList(nilai.kelengkapan)}</textarea>
+    </label>
+  </fieldset>
+
+  <fieldset class="flex flex-col gap-3">
+    <legend class="text-sm font-bold text-stone-900">Foto</legend>
+
+    {
+      fotoTerpilih.length > 0 && (
+        <div class="flex flex-wrap gap-2">
+          {
+            fotoTerpilih.map((nama) => (
+              <img src={fotoSrc(nama, 'thumb')} alt="" class="size-20 rounded-md border border-garis bg-stone-100 object-cover" loading="lazy" />
+            ))
+          }
+        </div>
+      )
+    }
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Daftar foto (nama file, satu per baris)</span>
+      <textarea name="foto" rows="3" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none">{textareaList(fotoTerpilih)}</textarea>
+    </label>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Upload foto baru (boleh banyak sekaligus)</span>
+      <input type="file" name="fotoBaru" accept="image/*" multiple class="target-sentuh text-sm text-stone-600 file:mr-3 file:rounded-md file:border file:border-stone-300 file:bg-stone-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-stone-900" />
+    </label>
+    <p class="text-xs text-stone-500">File terupload otomatis ditambahkan ke daftar foto di atas.</p>
+  </fieldset>
+
+  <div class="flex flex-wrap items-center gap-3 border-t border-garis pt-5">
+    <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800">
+      {tombolLabel}
+    </button>
+    <a href="/admin" class="target-sentuh inline-flex items-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-stone-900 hover:bg-stone-100">
+      Batal
+    </a>
+  </div>
+</form>

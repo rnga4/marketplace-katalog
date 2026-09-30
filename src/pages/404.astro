@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NotFoundView from '../components/NotFoundView.astro';
+
+Astro.response.status = 404;
+---
+
+<BaseLayout title="Halaman tidak ditemukan">
+  <NotFoundView />
+</BaseLayout>

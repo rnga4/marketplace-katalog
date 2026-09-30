@@ -1,0 +1,56 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import UnitForm from '../../../components/admin/UnitForm.astro';
+import NotFoundView from '../../../components/NotFoundView.astro';
+import { getUnit, updateUnit } from '../../../lib/db';
+import { bacaSesi } from '../../../lib/auth';
+import { cekCsrf } from '../../../lib/forms';
+import { unitDariForm, prosesFotoUpload } from '../../../lib/formUnit';
+import { hapusFoto } from '../../../lib/foto';
+
+const sesi = bacaSesi(Astro.cookies);
+const csrf = sesi?.csrf ?? '';
+const slug = Astro.params.slug ?? '';
+const unit = getUnit(slug);
+
+let galat: string | null = null;
+let nilaiForm: Partial<import('../../../lib/db').UnitHp> | undefined = unit ?? undefined;
+
+if (!unit) {
+  Astro.response.status = 404;
+} else if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  if (!cekCsrf(fd, sesi)) {
+    return Astro.redirect('/admin?notif=salahfasilitas');
+  }
+  const nilai = unitDariForm(fd);
+  nilai.nama = nilai.nama || unit.nama;
+  if (!nilai.harga || nilai.harga <= 0) {
+    galat = 'Harga wajib diisi dan lebih dari 0.';
+    nilaiForm = { ...unit, ...nilai, slug };
+  } else try {
+    nilai.foto = await prosesFotoUpload(fd, slug, nilai.foto ?? []);
+    updateUnit(slug, nilai);
+    for (const f of unit.foto) if (!nilai.foto.includes(f)) hapusFoto(f);
+    return Astro.redirect('/admin?notif=tersimpan');
+  } catch (err) {
+    galat = err instanceof Error ? err.message : 'Gagal memproses foto atau memperbarui unit.';
+    nilaiForm = { ...unit, ...nilai, slug };
+  }
+}
+---
+
+{!unit ? (
+  <AdminLayout title="Unit tidak ditemukan" notif={null}>
+    <NotFoundView />
+  </AdminLayout>
+) : (
+  <AdminLayout title={`Edit ${unit.nama}`} notif={galat ? { jenis: 'err', teks: galat } : null}>
+    <header class="mb-6">
+      <h1 class="text-xl font-bold tracking-tight text-stone-900">Edit {unit.nama}</h1>
+      <p class="text-sm text-stone-600">Perubahan langsung tercermin di halaman publik.</p>
+    </header>
+
+    <UnitForm csrf={csrf} action={`/admin/edit/${unit.slug}`} nilai={nilaiForm} gantiSlug={false} tombolLabel="Simpan perubahan" />
+  </AdminLayout>
+)}

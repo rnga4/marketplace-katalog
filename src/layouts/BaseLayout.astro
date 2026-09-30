@@ -1,0 +1,54 @@
+---
+import '@fontsource-variable/plus-jakarta-sans';
+import '../styles/global.css';
+
+import { ambilSite } from '../lib/db';
+import { urlAbsolut } from '../data/site';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+}
+
+const site = ambilSite();
+
+const {
+  title = site.namaLengkap,
+  description = site.deskripsi,
+  ogImage = '/og-default.png',
+} = Astro.props;
+
+const judulHalaman = title === site.namaLengkap ? site.namaLengkap : `${title} · ${site.nama}`;
+const canonical = urlAbsolut(Astro.url.pathname, Astro.site);
+const ogAbsolut = urlAbsolut(ogImage, Astro.site);
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{judulHalaman}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={judulHalaman} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogAbsolut} />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:site_name" content={site.namaLengkap} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+  </head>
+  <body>
+    <Header />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

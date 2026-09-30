@@ -1,0 +1,149 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { ambilSite, simpanSite } from '../../lib/db';
+import { bacaSesi } from '../../lib/auth';
+import { cekCsrf, teksForm } from '../../lib/forms';
+import { normalisasiWa, waValid } from '../../data/site';
+
+const sesi = bacaSesi(Astro.cookies);
+let galat: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  if (!cekCsrf(fd, sesi)) {
+    return Astro.redirect('/admin?notif=salahfasilitas');
+  }
+
+  const whatsapp = normalisasiWa(teksForm(fd, 'whatsapp'));
+  const nama = teksForm(fd, 'nama');
+  if (whatsapp && !waValid(whatsapp)) {
+    galat = 'Nomor WhatsApp belum benar. Tulis tanpa tanda plus, contoh 6281234567890.';
+  } else if (!nama) {
+    galat = 'Nama toko tidak boleh kosong.';
+  } else {
+    simpanSite({
+      nama,
+      namaLengkap: teksForm(fd, 'namaLengkap') || nama,
+      tagline: teksForm(fd, 'tagline'),
+      deskripsi: teksForm(fd, 'deskripsi'),
+      bahasa: 'id-ID',
+      lokasi: teksForm(fd, 'lokasi'),
+      whatsapp,
+    });
+    return Astro.redirect('/admin/pengaturan?notif=identsimpan');
+  }
+}
+
+const site = ambilSite();
+const csrf = sesi?.csrf ?? '';
+const input =
+  'target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none';
+const label = 'flex flex-col gap-1.5';
+const spanLabel = 'text-sm font-medium text-stone-900';
+const bantuan = 'text-xs text-stone-600';
+---
+
+<AdminLayout
+  title="Identitas toko"
+  notif={galat
+    ? { jenis: 'err', teks: galat }
+    : Astro.url.searchParams.has('notif')
+      ? { jenis: 'ok', teks: 'Identitas toko tersimpan.' }
+      : null}
+>
+  <header class="mb-6">
+    <h1 class="text-xl font-bold tracking-tight text-stone-900">Identitas toko</h1>
+    <p class="text-sm text-stone-600">
+      Nama dan nomor WhatsApp yang muncul di seluruh halaman. Berlaku begitu disimpan, tanpa
+      build ulang.
+    </p>
+  </header>
+
+  {
+    !waValid(site.whatsapp) && (
+      <div class="mb-6 rounded-md border border-amber-700 bg-dasar p-4">
+        <p class="text-sm font-semibold text-stone-900">Nomor WhatsApp belum diisi.</p>
+        <p class="mt-1 text-sm text-stone-600">
+          Semua tombol WhatsApp disembunyikan sampai nomor diisi, supaya tidak ada pembeli
+          yang mengirim pesan ke nomor yang salah.
+        </p>
+      </div>
+    )
+  }
+
+  <form method="post" action="/admin/pengaturan" class="flex max-w-2xl flex-col gap-6">
+    <input type="hidden" name="csrf" value={csrf} />
+
+    <fieldset class="flex flex-col gap-3">
+      <legend class="text-sm font-bold text-stone-900">Nama</legend>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class={label}>
+          <span class={spanLabel}>Nama pendek <b class="text-red-800">*</b></span>
+          <input name="nama" required maxlength="40" value={site.nama} class={input} />
+          <span class={bantuan}>Dipakai di header dan judul browser. Maksimal 40 huruf.</span>
+        </label>
+        <label class={label}>
+          <span class={spanLabel}>Nama lengkap <b class="text-red-800">*</b></span>
+          <input name="namaLengkap" required maxlength="80" value={site.namaLengkap} class={input} />
+          <span class={bantuan}>Dipakai di footer dan deskripsi halaman.</span>
+        </label>
+      </div>
+      <label class={label}>
+        <span class={spanLabel}>Kalimat pembuka</span>
+        <input name="tagline" maxlength="120" value={site.tagline} class={input} />
+        <span class={bantuan}>Satu kalimat di bawah judul besar. Boleh dikosongkan.</span>
+      </label>
+    </fieldset>
+
+    <fieldset class="flex flex-col gap-3">
+      <legend class="text-sm font-bold text-stone-900">Kontak</legend>
+      <label class={label}>
+        <span class={spanLabel}>Nomor WhatsApp</span>
+        <input
+          name="whatsapp"
+          inputmode="tel"
+          maxlength="20"
+          value={site.whatsapp}
+          placeholder="6281234567890"
+          class={input}
+        />
+        <span class={bantuan}>
+          Boleh ditulis 08xx atau +62xx, disimpan otomatis jadi format 62xx. Kosongkan dulu
+          kalau mau tombol WhatsApp disembunyikan.
+        </span>
+      </label>
+      <label class={label}>
+        <span class={spanLabel}>Kota atau daerah</span>
+        <input name="lokasi" maxlength="60" value={site.lokasi} class={input} />
+        <span class={bantuan}>Boleh dikosongkan. Tidak dipakai untuk menghitung ongkir.</span>
+      </label>
+    </fieldset>
+
+    <fieldset class="flex flex-col gap-3">
+      <legend class="text-sm font-bold text-stone-900">Deskripsi</legend>
+      <label class={label}>
+        <span class={spanLabel}>Deskripsi toko</span>
+        <textarea
+          name="deskripsi"
+          rows="3"
+          maxlength="300"
+          class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 py-2 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+          >{site.deskripsi}</textarea
+        >
+        <span class={bantuan}>
+          Dipakai di footer dan sebagai deskripsi halaman untuk mesin pencari. Maksimal 300
+          huruf.
+        </span>
+      </label>
+    </fieldset>
+
+    <div>
+      <button
+        type="submit"
+        class="target-sentuh inline-flex items-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800"
+      >
+        Simpan identitas
+      </button>
+    </div>
+  </form>
+</AdminLayout>

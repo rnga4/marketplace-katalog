@@ -1,0 +1,46 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import UnitForm from '../../components/admin/UnitForm.astro';
+import { getUnit, createUnit } from '../../lib/db';
+import { bacaSesi } from '../../lib/auth';
+import { cekCsrf } from '../../lib/forms';
+import { unitDariForm, slugDariForm, prosesFotoUpload } from '../../lib/formUnit';
+
+const sesi = bacaSesi(Astro.cookies);
+const csrf = sesi?.csrf ?? '';
+
+let galat: string | null = null;
+let nilaiForm: Partial<import('../../lib/db').UnitHp> | undefined = undefined;
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  if (!cekCsrf(fd, sesi)) {
+    return Astro.redirect('/admin?notif=salahfasilitas');
+  }
+  const unit = unitDariForm(fd);
+  nilaiForm = unit;
+  const slug = await slugDariForm(fd, unit.nama, (s) => !!getUnit(s));
+  if (!unit.harga || unit.harga <= 0) {
+    galat = 'Harga wajib diisi dan lebih dari 0.';
+  } else if (!slug) {
+    galat = 'Slug tidak valid atau sudah dipakai unit lain. Ubah nama atau isi slug manual.';
+  } else {
+    try {
+      unit.foto = await prosesFotoUpload(fd, slug, unit.foto ?? []);
+      createUnit(slug, unit);
+      return Astro.redirect('/admin?notif=tersimpan');
+    } catch (err) {
+      galat = err instanceof Error ? err.message : 'Gagal memproses foto atau menyimpan unit.';
+    }
+  }
+}
+---
+
+<AdminLayout title="Tambah unit" notif={galat ? { jenis: 'err', teks: galat } : null}>
+  <header class="mb-6">
+    <h1 class="text-xl font-bold tracking-tight text-stone-900">Tambah unit baru</h1>
+    <p class="text-sm text-stone-600">Unit langsung tampil di katalog publik setelah disimpan.</p>
+  </header>
+
+  <UnitForm csrf={csrf} action="/admin/tambah" tombolLabel="Simpan unit baru" nilai={nilaiForm} />
+</AdminLayout>

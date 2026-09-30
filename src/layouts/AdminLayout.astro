@@ -1,0 +1,99 @@
+---
+import '@fontsource-variable/plus-jakarta-sans';
+import '../styles/global.css';
+
+import { bacaSesi } from '../lib/auth';
+
+interface Props {
+  title: string;
+  notif?: { jenis: 'ok' | 'err'; teks: string } | null;
+}
+
+const { title } = Astro.props;
+const notif = Astro.props.notif ?? null;
+const sesi = bacaSesi(Astro.cookies);
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · Admin</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+  </head>
+  <body>
+    <header class="border-b border-garis bg-dasar">
+      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <a href="/admin" class="target-sentuh flex items-center gap-2">
+          <span class="flex size-8 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
+            HP
+          </span>
+          <span class="text-sm font-bold tracking-tight text-stone-900">Admin katalog</span>
+        </a>
+        <nav class="flex flex-wrap items-center gap-1" aria-label="Navigasi admin">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener"
+            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+          >
+            Lihat katalog publik
+          </a>
+          <a
+            href="/admin/tambah"
+            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+          >
+            Tambah unit
+          </a>
+          <a
+            href="/admin/pengaturan"
+            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+          >
+            Identitas toko
+          </a>
+          <a
+            href="/admin/ubah-sandi"
+            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+          >
+            Ubah kata sandi
+          </a>
+          <form method="post" action="/admin/logout">
+            <input type="hidden" name="csrf" value={sesi?.csrf ?? ''} />
+            <button
+              type="submit"
+              class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-semibold text-stone-900 hover:bg-stone-100 hover:text-red-800"
+            >
+              Keluar
+            </button>
+          </form>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      {
+        notif && (
+          <div
+            class={`mb-6 rounded-md border px-4 py-3 text-sm ${
+              notif.jenis === 'ok'
+                ? 'border-emerald-700 bg-emerald-50 text-emerald-900'
+                : 'border-red-700 bg-red-50 text-red-900'
+            }`}
+            role="status"
+          >
+            {notif.teks}
+          </div>
+        )
+      }
+      <slot />
+    </main>
+  </body>
+</html>
+
+<script>
+  /* Setelah aksi (ada pesan di atas) pembacaan dimulai dari pesannya.
+     Saat konfirmasi hapus, biarkan halaman yang mengatur posisi gulirnya sendiri. */
+  if (document.querySelector('[role="status"]')) window.scrollTo(0, 0);
+</script>

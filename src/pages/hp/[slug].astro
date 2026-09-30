@@ -1,0 +1,247 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getUnit, hargaTercoret, ambilSite } from '../../lib/db';
+import { rupiah, gabung } from '../../lib/format';
+import { linkWa } from '../../data/site';
+import { fotoSrc, fotoSrcSet } from '../../lib/foto';
+import KondisiBadge from '../../components/KondisiBadge.astro';
+import NotFoundView from '../../components/NotFoundView.astro';
+
+const slug = Astro.params.slug ?? '';
+const unit = getUnit(slug);
+
+if (!unit) {
+  Astro.response.status = 404;
+}
+
+const coret = unit ? hargaTercoret(unit) : null;
+const judulSeo = unit ? `${unit.nama} ${unit.kapasitas}` : 'Unit tidak ditemukan';
+const pesanWa = unit
+  ? `Halo, saya tertarik dengan ${unit.nama} (${gabung([unit.kapasitas, unit.warna])}), ${rupiah(unit.harga)}. Masih tersedia?\n${new URL(`/hp/${unit.slug}`, Astro.site ?? 'http://localhost:8096').href}`
+  : '';
+const site = ambilSite();
+const linkWaUnit = unit ? linkWa(pesanWa, site) : null;
+const linkWaSerupa = linkWa(`Halo, ${unit?.nama ?? 'satu unit'} sudah terjual. Ada unit lain yang mirip?`, site);
+const ringkas = unit ? gabung([unit.kapasitas, unit.ram, unit.warna]) : '';
+
+const SPESIFIKASI = unit
+  ? ([
+      { label: 'Merk', isi: unit.merk },
+      { label: 'Seri', isi: unit.seri },
+      { label: 'Kapasitas', isi: unit.kapasitas },
+      { label: 'RAM', isi: unit.ram },
+      { label: 'Warna', isi: unit.warna },
+      { label: 'Layar', isi: unit.layar },
+      { label: 'Baterai', isi: unit.baterai },
+    ] as const)
+  : ([] as const);
+---
+
+<BaseLayout
+  title={judulSeo}
+  description={unit?.deskripsi || gabung([unit?.nama, unit?.kapasitas, unit ? rupiah(unit.harga) : '']) || undefined}
+  ogImage={unit?.foto[0] ? fotoSrc(unit.foto[0], 'besar') : undefined}
+>
+  {
+    !unit ? (
+      <NotFoundView />
+    ) : (
+      <section class="seks-luas mx-auto max-w-5xl px-4 sm:px-6">
+        <nav class="mb-6 text-sm text-stone-600" aria-label="Breadcrumb">
+          <a
+            href="/#katalog"
+            class="target-sentuh -my-3 inline-flex items-center rounded-md px-1 py-3 hover:text-aksi-teks"
+          >
+            Katalog
+          </a>
+          <span class="mx-2" aria-hidden="true">/</span>
+          <span class="text-stone-900">{unit.nama}</span>
+        </nav>
+
+        <div class="grid gap-10 md:grid-cols-2 md:gap-12">
+          <div>
+            <div class="aspect-[4/5] overflow-hidden rounded-md bg-stone-100">
+              {
+                unit.foto[0] && (
+                  <img
+                    id="foto-utama"
+                    fetchpriority="high"
+                    src={fotoSrc(unit.foto[0], 'sedang')}
+                    srcset={fotoSrcSet(unit.foto[0])}
+                    sizes="(min-width: 768px) 560px, 100vw"
+                    alt={`Foto ${unit.nama}`}
+                    class="size-full object-cover"
+                  />
+                )
+              }
+            </div>
+            {
+              unit.foto.length > 1 && (
+                <div class="mt-3 flex flex-wrap gap-3" role="group" aria-label="Pilih foto">
+                  {unit.foto.map((nama, i) => (
+                    <button
+                      type="button"
+                      data-foto={fotoSrc(nama, 'besar')}
+                      data-foto-set={fotoSrcSet(nama) ?? ''}
+                      aria-pressed={i === 0 ? 'true' : 'false'}
+                      aria-label={`Tampilkan foto ${i + 1} dari ${unit.foto.length}, ${unit.nama}`}
+                      class={`size-20 shrink-0 overflow-hidden rounded-md border-2 bg-stone-100 ${i === 0 ? 'border-aksi' : 'border-garis hover:border-aksi'}`}
+                    >
+                      <img
+                        src={fotoSrc(nama, 'thumb')}
+                        alt=""
+                        class="size-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )
+            }
+          </div>
+
+          <div class="flex flex-col gap-6">
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-3">
+                <KondisiBadge kondisi={unit.kondisi} />
+                {
+                  unit.tersedia ? (
+                    <span class="text-sm font-semibold text-aksi-teks">Tersedia</span>
+                  ) : (
+                    <span class="text-sm font-semibold text-stone-500">Terjual</span>
+                  )
+                }
+              </div>
+              <h1 class="judul-hero text-stone-900">{unit.nama}</h1>
+              {ringkas && <p class="text-sm text-stone-600">{ringkas}</p>}
+              <div class="flex flex-wrap items-baseline gap-3 border-b border-garis pb-5">
+                <span class="text-3xl font-bold text-stone-900">{rupiah(unit.harga)}</span>
+                {coret && <span class="text-base text-stone-500 line-through">{rupiah(coret)}</span>}
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-3">
+              {
+                unit.tersedia ? (
+                  linkWaUnit && (
+                    <a
+                      href={linkWaUnit}
+                      class="target-sentuh inline-flex w-full items-center justify-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800"
+                    >
+                      Tanya lewat WhatsApp
+                    </a>
+                  )
+                ) : (
+                  linkWaSerupa && (
+                    <a
+                      href={linkWaSerupa}
+                      class="target-sentuh inline-flex w-full items-center justify-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-stone-900 hover:border-stone-500 hover:bg-stone-100"
+                    >
+                      Tanyakan unit lain lewat WhatsApp
+                    </a>
+                  )
+                )
+              }
+              <p class="text-xs text-stone-600 prosa">
+                Unit {unit.tersedia ? 'masih tersedia' : 'sudah tidak tersedia'}, konfirmasi stok dulu
+                sebelum transfer.
+              </p>
+            </div>
+
+            {
+              unit.catatan.length > 0 && (
+                <div class="flex flex-col gap-2">
+                  <h2 class="text-sm font-bold uppercase tracking-wide text-stone-900">Kondisi unit</h2>
+                  <ul class="flex flex-col gap-1.5">
+                    {
+                      unit.catatan.map((catatan) => (
+                        <li class="flex flex-col gap-1 text-sm text-stone-600 prosa">
+                          <span class="rounded-md border border-garis px-3 py-2">{catatan}</span>
+                        </li>
+                      ))
+                    }
+                  </ul>
+                </div>
+              )
+            }
+          </div>
+        </div>
+
+        <div class="mt-12 grid gap-8 border-t border-garis pt-10 md:grid-cols-3 md:gap-12">
+          <div class="md:col-span-2 flex flex-col gap-4">
+            <h2 class="kepala-seksi text-stone-900">Deskripsi</h2>
+            {
+              unit.deskripsi ? (
+                <p class="text-base text-stone-600 prosa">{unit.deskripsi}</p>
+              ) : (
+                <p class="text-base text-stone-600 prosa">
+                  Catatan untuk unit ini belum diisi. Tanya saja lewat WhatsApp supaya dijawab langsung.
+                </p>
+              )
+            }
+          </div>
+          <div class="flex flex-col gap-2">
+            <h2 class="text-sm font-bold uppercase tracking-wide text-stone-900">Spesifikasi</h2>
+            {
+              SPESIFIKASI.some((s) => s.isi) ? (
+                <dl class="flex flex-col divide-y divide-garis border-b border-t border-garis">
+                  {SPESIFIKASI.filter((s) => s.isi).map((s) => (
+                    <div class="flex items-center justify-between gap-4 py-2 text-sm">
+                      <dt class="text-stone-600">{s.label}</dt>
+                      <dd class="font-medium text-stone-900">{s.isi}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p class="text-sm text-stone-600 prosa">Spesifikasi unit ini belum diisi.</p>
+              )
+            }
+          </div>
+        </div>
+
+        <div class="mt-12 border-t border-garis pt-10">
+          <h2 class="kepala-seksi text-stone-900">Kelengkapan</h2>
+          {
+            unit.kelengkapan.length > 0 ? (
+              <>
+                <p class="mt-1 text-sm text-stone-600">
+                  Apa yang ikut dibawa saat unit dikirim. Barang lain di luar daftar ini tidak termasuk.
+                </p>
+                <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+                  {unit.kelengkapan.map((barang) => (
+                    <li class="rounded-md border border-garis px-4 py-3 text-sm text-stone-700">{barang}</li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p class="mt-1 text-sm text-stone-600 prosa">
+                Daftar kelengkapan unit ini belum diisi. Tanyakan dulu isi kotaknya sebelum transfer.
+              </p>
+            )
+          }
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>
+
+<script>
+  const tombol = document.querySelectorAll<HTMLButtonElement>('[data-foto]');
+  const utama = document.getElementById('foto-utama') as HTMLImageElement | null;
+  if (tombol.length && utama) {
+    const pilih = (aktif: HTMLButtonElement) => {
+      utama.src = aktif.dataset.foto ?? utama.src;
+      utama.srcset = aktif.dataset.fotoSet || '';
+      for (const lain of tombol) {
+        const terpilih = lain === aktif;
+        lain.classList.toggle('border-aksi', terpilih);
+        lain.classList.toggle('border-garis', !terpilih);
+        lain.setAttribute('aria-pressed', String(terpilih));
+      }
+    };
+    for (const btn of tombol) {
+      btn.addEventListener('click', () => pilih(btn));
+    }
+  }
+</script>

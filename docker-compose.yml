@@ -1,0 +1,105 @@
+name: handphone-second
+
+services:
+  # Aplikasi: Astro SSR (Node adapter) + SQLite. Data di volume ./data.
+  app:
+    build:
+      context: .
+      target: app
+      args:
+        SITE_URL: ${SITE_URL:-http://localhost:${PUBLIC_HTTP_PORT:-8096}}
+    image: handphone-second-app:latest
+    container_name: handphone-second-app
+    restart: unless-stopped
+    init: true
+    environment:
+      TZ: Asia/Jakarta
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATA_DIR: /data
+      # Kosongkan keduanya untuk pakai nilai bawaan aman:
+      # - SESSION_SECRET dibuat otomatis & disimpan di ./data/.secret
+      # - ADMIN_PASSWORD dibuat acak saat DB baru, dicetak di log sekali saja
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SEED_DEMO: ${SEED_DEMO:-0}
+    volumes:
+      - ./data:/data
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - internal
+
+  # Gerbang Nginx: statis + foto dari volume, sisanya proxy ke app.
+  web:
+    build:
+      context: .
+      target: web
+    image: handphone-second-web:latest
+    container_name: handphone-second-web
+    restart: unless-stopped
+    init: true
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "${PUBLIC_HTTP_PORT:-8096}:80"
+    environment:
+      TZ: Asia/Jakarta
+    volumes:
+      - ./data/foto:/usr/share/nginx/foto:ro
+    read_only: true
+    tmpfs:
+      - /var/run:uid=101,gid=101,mode=0755
+      - /var/cache/nginx:uid=101,gid=101,mode=0755
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - NET_BIND_SERVICE
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - internal
+
+  # Opsional: ekspos ke internet tanpa IP publik lewat Cloudflare Tunnel.
+  # Aktifkan dengan: docker compose --profile tunnel up -d
+  tunnel:
+    image: cloudflare/cloudflared:2026.7.3
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    command: >
+      tunnel --no-autoupdate run --token ${TUNNEL_TOKEN:-placeholder}
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge

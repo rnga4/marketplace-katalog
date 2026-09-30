@@ -1,0 +1,21 @@
+---
+import { labelKondisi, type Kondisi } from '../lib/db';
+
+interface Props {
+  kondisi: Kondisi;
+}
+
+const { kondisi } = Astro.props;
+
+/* Warna garis dipilih dari rasio kontras di stone-50, bukan dari nama warna:
+   amber-700 4.91:1, emerald-700 5.25:1, red-700 6.19:1 (WCAG 1.4.11 min 3:1). */
+const warna: Record<Kondisi, string> = {
+  mulus: 'border-emerald-700 text-emerald-800',
+  minus: 'border-amber-700 text-amber-800',
+  part: 'border-red-700 text-red-800',
+};
+---
+
+<span class={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-semibold ${warna[kondisi]}`}>
+  {labelKondisi(kondisi)}
+</span>
