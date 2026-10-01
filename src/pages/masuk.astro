@@ -3,10 +3,11 @@ import '@fontsource-variable/plus-jakarta-sans';
 import '../styles/global.css';
 
 import { buatCsrf, cookieAman, buatToken, COOKIE_AKUN } from '../lib/auth';
-import { ambilPenggunaByEmail, cekKataSandiPengguna } from '../lib/db';
+import { ambilPenggunaByNomor, cekKataSandiPengguna } from '../lib/db';
 import { teksForm } from '../lib/forms';
+import { normalisasiWa } from '../data/site';
 import { sleep } from '../lib/waktu';
-import { terkunci, catatGagal, bersihkan } from '../lib/ratelimit';
+import { terkunci, catatGagal, bersihkan, type Kunci } from '../lib/ratelimit';
 import Kembali from '../components/Kembali.astro';
 
 const csrf = buatCsrf();
@@ -14,7 +15,7 @@ let galat: string | null = null;
 let info: string | null = null;
 
 if (Astro.url.searchParams.get('daftar') === '1') {
-  info = 'Akun berhasil dibuat. Silakan masuk dengan email dan kata sandi yang kamu daftarkan.';
+  info = 'Akun berhasil dibuat. Silakan masuk dengan nomor WhatsApp dan kata sandi yang kamu daftarkan.';
 }
 
 if (Astro.request.method === 'POST') {
@@ -23,13 +24,16 @@ if (Astro.request.method === 'POST') {
   if (!dariCookie || teksForm(fd, 'csrf') !== dariCookie) {
     galat = 'Gagal verifikasi formulir. Muat ulang halaman lalu coba lagi.';
   } else {
-    const email = teksForm(fd, 'email').toLowerCase();
+    const nomor = normalisasiWa(teksForm(fd, 'nomor'));
     const sandi = teksForm(fd, 'kataSandi');
     const ip = Astro.request.headers.get('cf-connecting-ip') ?? Astro.clientAddress;
-    const kunci = `seller:${ip}:${email || 'tanpa-email'}`;
+    // Dua kunci terpisah, bukan satu gabungan. Kalau digabung, penyerang cukup
+    // cycling 5 nomor berbeda per 15 menit untuk menebak tanpa pernah kena
+    // batas, karena kuncinya ikut berubah tiap nomor.
+    const kunci: Kunci = nomor ? [`seller:ip:${ip}`, `seller:nomor:${nomor}`] : [`seller:ip:${ip}`];
     const dikunci = terkunci(kunci);
-    const pengguna = !dikunci && email.includes('@') ? ambilPenggunaByEmail(email) : null;
-    const benar = !!pengguna && pengguna.status === 'aktif' && cekKataSandiPengguna(email, sandi);
+    const pengguna = !dikunci && nomor ? ambilPenggunaByNomor(nomor) : null;
+    const benar = !!pengguna && pengguna.status === 'aktif' && cekKataSandiPengguna(pengguna.id, sandi);
     await sleep(450);
     if (benar && pengguna) {
       bersihkan(kunci);
@@ -47,7 +51,7 @@ if (Astro.request.method === 'POST') {
       if (!dikunci) catatGagal(kunci);
       galat = dikunci
         ? 'Terlalu banyak percobaan login. Coba lagi 15 menit lagi.'
-        : 'Email atau kata sandi salah, atau akun kamu ditangguhkan.';
+        : 'Nomor atau kata sandi salah, atau akun kamu ditangguhkan.';
     }
   }
 }
@@ -106,12 +110,14 @@ Astro.cookies.set('hp_csrf', csrf, {
           <form method="post" action="/masuk" class="flex flex-col gap-4">
             <input type="hidden" name="csrf" value={csrf} />
             <label class="flex flex-col gap-1.5">
-              <span class="text-sm font-medium text-stone-900">Email</span>
+              <span class="text-sm font-medium text-stone-900">Nomor WhatsApp</span>
               <input
-                type="email"
-                name="email"
+                type="tel"
+                name="nomor"
                 required
-                autocomplete="email"
+                inputmode="numeric"
+                autocomplete="tel"
+                placeholder="0812 3456 7890"
                 class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
               />
             </label>

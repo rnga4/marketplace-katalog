@@ -51,8 +51,8 @@ Alur katalog publik: `/` daftar unit dengan pencarian dan filter, `/hp/<slug>` d
 
 | Halaman | Isi |
 |---|---|
-| `/daftar` | Bikin akun seller dan lapak pertama sekaligus. |
-| `/masuk` | Login seller. Sesi 7 hari, cookie `httpOnly` terpisah dari admin. |
+| `/daftar` | Bikin akun seller dan lapak pertama sekaligus. Identitasnya nama toko, nomor WhatsApp, dan kata sandi. |
+| `/masuk` | Login seller pakai nomor WhatsApp. Sesi 7 hari, cookie `httpOnly` terpisah dari admin. |
 | `/akun` | Unit milik seller itu sendiri, dengan status moderasi tiap unit. |
 | `/akun/tambah` | Tambah unit. Langsung masuk antrean review. |
 | `/akun/edit/[slug]` | Edit unit milik sendiri. |
@@ -131,7 +131,8 @@ nginx/web/         aset statis + foto dari volume, sisanya proxy ke app
 - **Foto dihapus dari DB saat unit dihapus, file-nya tidak.** Ini disengaja supaya salah hapus tidak langsung hilang fotonya. Kebersihan manual pakai `rm` di `data/foto`.
 - **Satu admin, satu kata sandi.** Peran admin belum bisa di luar satu orang: kata sandinya tunggal dan belum ada daftar siapa mengubah apa. Multi-seller sudah ada, multi-admin belum.
 - **Panel terbuka lewat jaringan lokal.** Kalau mau diakses dari luar, pakai profil tunnel (`docker compose --profile tunnel up -d`) dan isi identitas lewat `/admin/pengaturan` dulu.
-- **Seller tidak diverifikasi email atau KTP.** Akun langsung aktif setelah daftar. Untuk tahap katalog ini cukup, tapi kalau nanti ada seller yang nakal, tidak ada siapa pun yang bisa dihubungi selain nomor WhatsApp yang dia isi sendiri.
+- **Seller tidak diverifikasi KTP, dan nomornya adalah satu-satunya jalan kembali ke akun.** Akun langsung aktif setelah daftar. Konsekuensinya harus jelas: kalau seller kehilangan nomor WhatsApp-nya, akunnya tidak bisa dipulihkan, karena tidak ada email dan tidak ada tombol reset kata sandi. Buat tahap katalog ini cukup, tapi ini alasan verificação email atau KTP belum bisa ditunda selamanya.
+- **Nomor WhatsApp adalah identitas login, jadi satu nomor satu akun.** Nomor yang sama adalah cara paling murah untuk mengambil alih lapak orang lain, jadi pendaftaran menolaknya. Nomor untuk masuk tidak bisa diganti sendiri di panel; kalau seller ganti nomor kontak di `/akun/toko`, nomor masuknya tetap yang lama.
 
 ## Yang perlu diisi sebelum go-live
 
@@ -140,6 +141,6 @@ Semua identitas toko sekarang bisa diisi dari panel, jadi tidak ada file yang pe
 - Buka `/admin/pengaturan`, isi **nama toko** dan **nomor WhatsApp** yang asli. Tanpa nomor, semua tombol WhatsApp di halaman publik disembunyikan, jadi pembeli tidak bisa menghubungi.
 - Ganti foto placeholder bertanda "FOTO CONTOH" dengan foto unit asli lewat `/admin/tambah` atau `/admin/edit`. Foto placeholder sengaja dibiarkan kelihatan sampai diganti, supaya tidak ada foto palsu yang dipakai menjual.
 - Logo: kotak header masih inisial nama. Kalau toko sudah punya logo, bilang saja untuk dipasang.
-- Kalau mau menerima seller dari publik, buka pendaftaran. Sampai itu, `/daftar` sudah hidup tapi tidak ditautkan dari mana pun, jadi pembeli tidak tersesat ke sana tanpa sengaja.
+- Kalau mau menerima seller dari publik, buka pendaftaran. Sampai itu, `/daftar` sudah hidup tapi tidak ditautkan dari mana pun, jadi pembeli tidak tersesat ke sana tanpa sengaja. Satu nomor hanya bisa mendaftar satu toko, jadi alasannya harus jelas ke calon seller.
 
 `DESIGN.md` sudah berstatus ketetapan, bukan draf. Kalau nanti mau mengubah arah visual, baca bagian Identitas, Palet, Motif, dan bagian "Multi-seller: batas yang sudah diputuskan" dulu — perubahan di sana mengikat komponen dan perilakunya.

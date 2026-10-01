@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
 import seed from '../data/hp.json';
-import { SITE_AWAL, normalisasiWa, type Site } from '../data/site';
+import { SITE_AWAL, normalisasiWa, waValid, type Site } from '../data/site';
 import { satuan, kapital } from './format';
 
 export type Kondisi = 'mulus' | 'minus' | 'part';
@@ -20,7 +20,7 @@ export const LABEL_MODERASI: Record<Moderasi, string> = {
 
 export interface Pengguna {
   id: number;
-  email: string;
+  nomor: string;
   nama: string;
   peran: Peran;
   status: string;
@@ -107,7 +107,7 @@ if (!(db.prepare('PRAGMA table_info(hp)').all() as { name: string }[]).some((c) 
 db.exec(`
   CREATE TABLE IF NOT EXISTS pengguna (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    email         TEXT NOT NULL UNIQUE,
+    nomor         TEXT NOT NULL UNIQUE,
     nama          TEXT NOT NULL,
     kata_sandi    TEXT NOT NULL,
     peran         TEXT NOT NULL DEFAULT 'seller',
@@ -125,6 +125,98 @@ db.exec(`
     lokasi        TEXT NOT NULL DEFAULT ''
   );
 `);
+
+/**
+ * Email diganti nomor WhatsApp sebagai identitas login. Banyak seller tidak
+ * memakai email sama sekali, dan nomor mereka sudah bisa dihubungi pembeli,
+ * jadi tidak perlu data kontak lain.
+ *
+ * Kolom email tidak bisa dikosongkan tanpa membangun ulang tabel, jadi tabel
+ * dibangun ulang. Id dipertahankan supaya kepemilikan unit dan lapak tidak
+ * putus.
+ *
+ * Foreign key dimatikan selama migrasi. Driver bawaan Node menyalakannya secara
+ * default, jadi tanpa ini lpak yang menunjuk pengguna akan membuat DROP TABLE
+ * gagal dan menyisakan pengguna_lama tertinggal di database.
+ *
+ * Tabel lapak ikut dibangun ulang. ALTER TABLE RENAME di SQLite menulis ulang
+ * definisi foreign key di tabel lain supaya menunjuk nama baru, jadi setelah
+ * pengguna_lama dihapus, lapak akan menunjuk tabel yang tidak ada lagi.
+ * foreign_key_check dipakai sebagai gerbang: kalau masih ada yang rusak,
+ * migrasi berhenti dengan pesan, bukan melanjutkan dengan relasi rusak.
+ *
+ * Syarat migrasi dicek ulang dari-awal, dan sisa pengguna_lama dari percobaan
+ * yang gagal sebelumnya dibersihkan dulu supaya database tidak tersangkut di
+ * tengah jalan.
+ */
+if ((db.prepare('PRAGMA table_info(pengguna)').all() as { name: string }[]).some((c) => c.name === 'email')) {
+  db.exec('PRAGMA foreign_keys = OFF');
+  const sisa = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'pengguna_lama'")
+    .get() as { name?: string } | undefined;
+  if (sisa?.name) db.exec('DROP TABLE pengguna_lama');
+
+  const lama = db.prepare('SELECT * FROM pengguna ORDER BY id').all() as Record<string, unknown>[];
+  const pilihLapak = db.prepare('SELECT whatsapp FROM lapak WHERE pengguna_id = ?');
+
+  db.exec('ALTER TABLE pengguna RENAME TO pengguna_lama');
+  db.exec(`
+    CREATE TABLE pengguna (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      nomor         TEXT NOT NULL UNIQUE,
+      nama          TEXT NOT NULL,
+      kata_sandi    TEXT NOT NULL,
+      peran         TEXT NOT NULL DEFAULT 'seller',
+      status        TEXT NOT NULL DEFAULT 'aktif',
+      dibuat_pada   INTEGER NOT NULL
+    );
+
+    CREATE TABLE lapak_baru (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      pengguna_id   INTEGER NOT NULL UNIQUE REFERENCES pengguna(id),
+      slug          TEXT NOT NULL UNIQUE,
+      nama          TEXT NOT NULL,
+      whatsapp      TEXT NOT NULL DEFAULT '',
+      deskripsi     TEXT NOT NULL DEFAULT '',
+      lokasi        TEXT NOT NULL DEFAULT ''
+    );
+
+    INSERT INTO lapak_baru (id, pengguna_id, slug, nama, whatsapp, deskripsi, lokasi)
+      SELECT id, pengguna_id, slug, nama, whatsapp, deskripsi, lokasi FROM lapak;
+
+    DROP TABLE lapak;
+    ALTER TABLE lapak_baru RENAME TO lapak;
+  `);
+
+  const sisip = db.prepare(
+    `INSERT INTO pengguna (id, nomor, nama, kata_sandi, peran, status, dibuat_pada)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  );
+
+  const terpakai = new Set<string>();
+  for (const u of lama) {
+    const id = Number(u.id);
+    const peran = String(u.peran ?? 'seller');
+    // Nomor login diambil dari nomor WhatsApp lapak. Kalau kosong, memakai id
+    // supaya setiap baris tetap punya identitas unik. Kolom UNIQUE di database
+    // bisa ditabrak kalau dua seller kebetulan memakai nomor yang sama, jadi
+    // nomor yang bentrok diberi akhiran: membiarkan INSERT gagal akan
+    // menggagalkan seluruh migrasi dan menyisakan pengguna_lama tertinggal.
+    const wa = String((pilihLapak.get(id) as { whatsapp?: string } | undefined)?.whatsapp ?? '');
+    let nomor = peran === 'admin' ? 'admin' : normalisasiWa(wa) || `pengguna-${id}`;
+    if (terpakai.has(nomor)) {
+      let n = 2;
+      while (terpakai.has(`${nomor}-${n}`)) n += 1;
+      nomor = `${nomor}-${n}`;
+    }
+    terpakai.add(nomor);
+    sisip.run(id, nomor, String(u.nama ?? ''), String(u.kata_sandi ?? ''), peran, String(u.status ?? 'aktif'), Number(u.dibuat_pada ?? Date.now()));
+  }
+  db.exec('DROP TABLE pengguna_lama');
+  db.exec('PRAGMA foreign_keys = ON');
+  const rusak = db.prepare('PRAGMA foreign_key_check').all() as Record<string, unknown>[];
+  if (rusak.length) throw new Error('Migrasi pengguna merusak relasi. Batal, kembalikan database dari backup.');
+}
 
 /**
  * Kolom pemilik ditambahkan satu per satu supaya database lama bisa naik
@@ -372,7 +464,7 @@ export function listSemuaUnits(): UnitHp[] {
  */
 export interface BarisModerasi extends UnitHp {
   sellerNama: string;
-  sellerEmail: string;
+  sellerNomor: string;
   lapakSlug: string | null;
   lapakWhatsapp: string;
 }
@@ -382,7 +474,7 @@ export function listAntrean(moderasi: Moderasi = 'menunggu'): BarisModerasi[] {
     .prepare(
       `SELECT hp.*,
               p.nama  AS seller_nama,
-              p.email AS seller_email,
+              p.nomor AS seller_nomor,
               l.slug  AS lapak_slug,
               l.whatsapp AS lapak_whatsapp
        FROM hp
@@ -399,7 +491,7 @@ export function listAntrean(moderasi: Moderasi = 'menunggu'): BarisModerasi[] {
       return {
         ...unit,
         sellerNama: nilaiTeks(r.seller_nama),
-        sellerEmail: nilaiTeks(r.seller_email),
+        sellerNomor: nilaiTeks(r.seller_nomor),
         lapakSlug: typeof r.lapak_slug === 'string' ? r.lapak_slug : null,
         lapakWhatsapp: nilaiTeks(r.lapak_whatsapp),
       };
@@ -455,7 +547,7 @@ function barisKePengguna(row: Record<string, unknown> | undefined): Pengguna | n
   if (!row) return null;
   return {
     id: integerNilai(row.id),
-    email: String(row.email ?? ''),
+    nomor: String(row.nomor ?? ''),
     nama: nilaiTeks(row.nama),
     peran: (row.peran === 'admin' ? 'admin' : 'seller') as Peran,
     status: nilaiTeks(row.status) || 'aktif',
@@ -481,49 +573,53 @@ function hashKataSandi(kataSandi: string): string {
   return `${salt}:${scryptSync(kataSandi, salt, 64, { N: SCRYPT_N }).toString('hex')}`;
 }
 
+/**
+ * Nomor WhatsApp adalah identitas login, bukan cuma kontak. Karena itu satu
+ * nomor hanya boleh punya satu akun: nomor yang sama adalah cara paling murah
+ * untuk mengambil alih lapak orang lain.
+ */
 export function createPengguna(p: {
-  email: string;
+  nomor: string;
   nama: string;
   kataSandi: string;
   peran?: Peran;
 }): Pengguna {
-  const email = p.email.trim().toLowerCase();
-  if (!email.includes('@')) throw new Error('Email tidak valid.');
-  if (adaPengguna(email)) throw new Error('Email ini sudah terdaftar. Coba masuk saja.');
+  const nomor = normalisasiWa(p.nomor);
+  if (!waValid(nomor)) throw new Error('Nomor WhatsApp tidak valid.');
+  if (adaPengguna(nomor)) throw new Error('Nomor ini sudah dipakai akun lain. Satu seller satu nomor, satu akun.');
   db.prepare(
-    `INSERT INTO pengguna (email, nama, kata_sandi, peran, status, dibuat_pada)
+    `INSERT INTO pengguna (nomor, nama, kata_sandi, peran, status, dibuat_pada)
      VALUES (?, ?, ?, ?, 'aktif', ?)`,
-  ).run(email, p.nama.trim(), hashKataSandi(p.kataSandi), p.peran ?? 'seller', Date.now());
-  const dibuat = ambilPenggunaByEmail(email);
+  ).run(nomor, p.nama.trim(), hashKataSandi(p.kataSandi), p.peran ?? 'seller', Date.now());
+  const dibuat = ambilPenggunaByNomor(nomor);
   if (!dibuat) throw new Error('Gagal menyimpan akun.');
   return dibuat;
 }
 
-export function ambilPenggunaByEmail(email: string): Pengguna | null {
+export function ambilPenggunaByNomor(nomor: string): Pengguna | null {
   return barisKePengguna(
-    db.prepare('SELECT id, email, nama, peran, status, dibuat_pada FROM pengguna WHERE email = ?')
-      .get(email.trim().toLowerCase()) as Record<string, unknown> | undefined,
+    db.prepare('SELECT id, nomor, nama, peran, status, dibuat_pada FROM pengguna WHERE nomor = ?')
+      .get(normalisasiWa(nomor)) as Record<string, unknown> | undefined,
   );
 }
 
 export function ambilPengguna(id: number): Pengguna | null {
   return barisKePengguna(
-    db.prepare('SELECT id, email, nama, peran, status, dibuat_pada FROM pengguna WHERE id = ?').get(id) as
+    db.prepare('SELECT id, nomor, nama, peran, status, dibuat_pada FROM pengguna WHERE id = ?').get(id) as
       | Record<string, unknown>
       | undefined,
   );
 }
 
-export function adaPengguna(email: string): boolean {
-  return (
-    db.prepare('SELECT 1 FROM pengguna WHERE email = ?').get(email.trim().toLowerCase()) !== undefined
-  );
+export function adaPengguna(nomor: string): boolean {
+  return db.prepare('SELECT 1 FROM pengguna WHERE nomor = ?').get(normalisasiWa(nomor)) !== undefined;
 }
 
 /** Cocokkan kata sandi seller. Hash yang rusak dianggap gagal, bukan error. */
-export function cekKataSandiPengguna(email: string, kataSandi: string): boolean {
-  const row = db.prepare('SELECT kata_sandi FROM pengguna WHERE email = ?')
-    .get(email.trim().toLowerCase()) as { kata_sandi?: string } | undefined;
+export function cekKataSandiPengguna(id: number, kataSandi: string): boolean {
+  const row = db.prepare('SELECT kata_sandi FROM pengguna WHERE id = ?').get(id) as
+    | { kata_sandi?: string }
+    | undefined;
   const simpan = row?.kata_sandi ?? '';
   if (!simpan.includes(':')) return false;
   const [salt, hash] = simpan.split(':');
@@ -862,11 +958,11 @@ export function simpanSite(site: Site): void {
  * yang sedang dipakai tetap berlaku dan tidak perlu diatur ulang.
  */
 
-export const EMAIL_ADMIN = 'admin@lapak';
+export const NOMOR_ADMIN = 'admin';
 
 export function ambilAdmin(): Pengguna | null {
   return barisKePengguna(
-    db.prepare("SELECT id, email, nama, peran, status, dibuat_pada FROM pengguna WHERE peran = 'admin' ORDER BY id LIMIT 1")
+    db.prepare("SELECT id, nomor, nama, peran, status, dibuat_pada FROM pengguna WHERE peran = 'admin' ORDER BY id LIMIT 1")
       .get() as Record<string, unknown> | undefined,
   );
 }
@@ -888,9 +984,9 @@ export function pastikanAdmin(): Pengguna {
   if (!hash.includes(':')) throw new Error('Gagal menyiapkan akun admin: kata sandi tidak terbentuk.');
 
   db.prepare(
-    `INSERT INTO pengguna (email, nama, kata_sandi, peran, status, dibuat_pada)
+    `INSERT INTO pengguna (nomor, nama, kata_sandi, peran, status, dibuat_pada)
      VALUES (?, ?, ?, 'admin', 'aktif', ?)`,
-  ).run(EMAIL_ADMIN, 'Admin', hash, Date.now());
+  ).run(NOMOR_ADMIN, 'Admin', hash, Date.now());
 
   const dibuat = ambilAdmin();
   if (!dibuat) throw new Error('Gagal menyiapkan akun admin.');

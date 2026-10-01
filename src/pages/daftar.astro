@@ -11,7 +11,7 @@ import Kembali from '../components/Kembali.astro';
 
 const csrf = buatCsrf();
 let galat: string | null = null;
-let nilai = { namaToko: '', email: '', whatsapp: '' };
+let nilai = { namaToko: '', whatsapp: '' };
 
 if (Astro.request.method === 'POST') {
   const fd = await Astro.request.formData();
@@ -20,25 +20,22 @@ if (Astro.request.method === 'POST') {
     galat = 'Gagal verifikasi formulir. Muat ulang halaman lalu coba lagi.';
   } else {
     const namaToko = teksForm(fd, 'namaToko');
-    const email = teksForm(fd, 'email').toLowerCase();
     const whatsapp = normalisasiWa(teksForm(fd, 'whatsapp'));
     const sandi = teksForm(fd, 'kataSandi');
-    nilai = { namaToko, email, whatsapp };
+    nilai = { namaToko, whatsapp };
 
     if (!namaToko) {
       galat = 'Nama toko wajib diisi.';
-    } else if (!email.includes('@') || email.length > 190) {
-      galat = 'Email tidak valid.';
     } else if (!waValid(whatsapp)) {
       galat = 'Nomor WhatsApp tidak valid. Tulis seperti 0812 3456 7890.';
     } else if (sandi.length < 8) {
       galat = 'Kata sandi minimal 8 karakter.';
-    } else if (adaPengguna(email)) {
-      galat = 'Email ini sudah terdaftar. Coba masuk saja.';
+    } else if (adaPengguna(whatsapp)) {
+      galat = 'Nomor ini sudah dipakai akun lain. Satu seller satu nomor, satu akun.';
     } else {
       await sleep(300);
       try {
-        const pengguna = createPengguna({ email, nama: namaToko, kataSandi: sandi });
+        const pengguna = createPengguna({ nomor: whatsapp, nama: namaToko, kataSandi: sandi });
         simpanLapak(pengguna.id, { nama: namaToko, whatsapp });
         Astro.cookies.set(COOKIE_AKUN, '', { path: '/', maxAge: 0 });
         return Astro.redirect('/masuk?daftar=1');
@@ -107,19 +104,7 @@ Astro.cookies.set('hp_csrf', csrf, {
               />
             </label>
             <label class="flex flex-col gap-1.5">
-              <span class="text-sm font-medium text-stone-900">Email <b class="text-red-800">*</b></span>
-              <input
-                type="email"
-                name="email"
-                required
-                maxlength="190"
-                value={nilai.email}
-                autocomplete="email"
-                class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
-              />
-            </label>
-            <label class="flex flex-col gap-1.5">
-              <span class="text-sm font-medium text-stone-900">WhatsApp <b class="text-red-800">*</b></span>
+              <span class="text-sm font-medium text-stone-900">Nomor WhatsApp <b class="text-red-800">*</b></span>
               <input
                 type="tel"
                 name="whatsapp"
@@ -130,7 +115,10 @@ Astro.cookies.set('hp_csrf', csrf, {
                 autocomplete="tel"
                 class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
               />
-              <span class="text-xs text-stone-600">Pembeli menghubungi nomor ini lewat tombol di halaman produkmu.</span>
+              <span class="text-xs text-stone-600">
+                Dipakai untuk masuk ke akunmu dan dihubungi pembeli lewat tombol di halaman produkmu. Satu
+                nomor hanya boleh satu akun.
+              </span>
             </label>
             <label class="flex flex-col gap-1.5">
               <span class="text-sm font-medium text-stone-900">Kata sandi <b class="text-red-800">*</b></span>

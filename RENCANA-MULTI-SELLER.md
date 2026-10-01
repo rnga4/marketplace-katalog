@@ -17,7 +17,7 @@ Target: 1000 seller, satu lapak per seller, katalog saja (tanpa keranjang, pemes
 ## Asumsi (bisa diubah sebelum ditulis ke data)
 
 - **Moderasi wajib** sebelum produk tayang. Label "Terverifikasi" di setiap kartu adalah janji kualitas; moderasi adalah yang menjaganya.
-- **Verifikasi email** saja untuk pendaftaran. Verifikasi identitas butuh layanan dari luar yang belum ada di proyek ini.
+- ~~**Verifikasi email**~~ tidak jadi syarat. Formulir pendaftaran cukup nama toko, nomor WhatsApp, dan kata sandi. Verifikasi identitas butuh layanan dari luar yang belum ada di proyek ini, dan banyak seller katalog kecil tidak punya email.
 - **URL lapak** `/lapak/[slug-toko]`. Asumsi URL ini belum dipakai; katalog sekarang memakai `/hp/[slug]`.
 - **Pembayaran manual** lewat WhatsApp di tahap 1.
 
@@ -66,7 +66,7 @@ Tidak merusak apa pun yang berjalan sekarang. Data dan URL lama tetap utuh.
 ### 1.3 Halaman seller
 
 - `/daftar` pendaftaran, `/masuk` login, `/akun` dasbor seller: produk saya, tambah, edit, pengaturan lapak.
-- Formulir pendaftaran: nama toko, email, kata sandi, nomor WhatsApp. Nomor divalidasi dan dinormalkan seperti `normalisasiWa` yang sekarang.
+- Formulir pendaftaran: nama toko, nomor WhatsApp, kata sandi. Nomor divalidasi dan dinormalkan seperti `normalisasiWa` yang sekarang, lalu dipakai juga sebagai identitas login. Satu nomor satu akun.
 - Batas ukuran unggah dan jenis file ditegakkan di server, bukan hanya di tag `accept`.
 
 ### 1.4 WhatsApp per seller
@@ -126,7 +126,7 @@ Tahap 1 selesai dan sudah dideploy. Yang berubah dari rencana awal:
 
 - **Tab WhatsApp tidak dihapus dari bar bawah.** Rencana awal berbunyi tab "Akun" *menggantikan* tab WhatsApp dengan alasan pembeli jangan kehilangan kontak. Begitu halaman seller selesai, alasan itu tidak berlaku lagi, jadi WhatsApp tetap satu klik dan "Akun" jadi tab keempat. Bar bawah selalu empat item.
 - **Katalog tetap hanya menampilkan unit tersedia.** `katalogUnit()` punya opsi `hanyaTersedia` yang default aktif, karena kartu katalog tidak punya penanda "Terjual". Menampilkan unit terjual di katalog adalah keputusan isi konten, bukan perbaikan UI: perlu label status di kartu lebih dulu.
-- **Verifikasi email belum ada.** Akun seller langsung aktif setelah daftar. Untuk tahap katalog ini cukup, tapi seller yang nakal tidak punya jalur lain untuk dihubungi selain nomor WhatsApp yang dia isi sendiri.
+- **Email dihapus dari pendaftaran, nomor WhatsApp jadi identitas login.** Konsekuensi yang harus diterima: satu nomor hanya boleh satu toko, dan tidak ada cara memulihkan akun kalau seller kehilangan nomornya karena tidak ada email maupun tombol lupa kata sandi.
 
 Yang sengaja tidak dikerjakan di tahap 1: PostgreSQL, object storage, Redis, dan multi-admin. Alasannya ada di bagian risiko skala di atas.
 
