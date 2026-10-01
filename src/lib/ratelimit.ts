@@ -12,20 +12,22 @@ const KUNCI_MS = 15 * 60_000;
 /** Semua kunci yang sedang aktif untuk satu percobaan login. */
 export type Kunci = readonly string[];
 
+/**
+ * Kunci dihitung terpisah: login terkunci kalau IP atau nomornya sendiri
+ * sudah melewati batas. Menjumlahkan semua penghitung akan membuat satu IP
+ * yang mengetik dengan lima nomor berbeda ikut terkunci setelah tiga percobaan,
+ * dengan lima nomor berbeda ikut terkunci setelah tiga percobaan, dan itu
+ * bukan yang mau di sini — yang dilindungi adalah satu akun.
+ */
 export const terkunci = (kunci: Kunci): boolean => {
-  if (!kunci.length) return false;
-  let n = 0;
-  let buka = 0;
+  const sekarang = Date.now();
   for (const k of kunci) {
     const e = db.prepare('SELECT n, buka FROM percobaan WHERE kunci = ?').get(k) as
       | { n: number; buka: number }
       | undefined;
-    if (e && e.buka > Date.now()) {
-      n += e.n;
-      buka = Math.max(buka, e.buka);
-    }
+    if (e && e.buka > sekarang && e.n >= MAKS) return true;
   }
-  return n >= MAKS && buka > Date.now();
+  return false;
 };
 
 export const catatGagal = (kunci: Kunci): void => {

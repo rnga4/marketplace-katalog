@@ -1,20 +1,42 @@
 ---
-import { ambilSite } from '../lib/db';
-import { inisial } from '../data/site';
+import { ambilLapak, ambilSite } from '../lib/db';
+import { inisial, linkWa } from '../data/site';
+import { bacaSesi, COOKIE_ADMIN, COOKIE_AKUN } from '../lib/auth';
 import Kembali from './Kembali.astro';
 
 interface Props {
   /** Halaman tujuan tombol kembali. Null di Beranda, karena tidak ada halaman sebelumnya. */
   kembali?: { href: string; label: string } | null;
+  /** Halaman ini sudah punya tombol WhatsApp aksen sendiri, jadi header tidak boleh menirunya. */
+  tombolWa?: boolean;
 }
 
 const site = ambilSite();
 const kembali = Astro.props.kembali ?? null;
+const tombolWa = Astro.props.tombolWa ?? true;
 
+const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
+const sesiSeller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const wa = linkWa(undefined, site.whatsapp, site.nama);
+
+/* Nav penuh, bukan hamburger. Empat item muat tanpa tekanan di lebar desktop,
+   dan menyembunyikannya di balik tombol berarti menambah satu klik ke setiap
+   tujuan tanpa alasan yang nyata: ruang di sini cukup. */
 const NAV = [
   { label: 'Beranda', href: '/' },
   { label: 'Katalog', href: '/#katalog' },
 ] as const;
+
+/* Admin diarahkan ke panel kerjanya, seller ke produknya sendiri, dan
+   pengunjung yang belum masuk ke halaman masuk. Label seller memakai nama
+   tokonya supaya "/akun" terbaca sebagai tempat miliknya, bukan menu generik. */
+let akunNav: { label: string; href: string } = { label: 'Masuk', href: '/masuk' };
+if (admin) {
+  akunNav = { label: 'Kelola', href: '/admin' };
+} else if (sesiSeller?.penggunaId) {
+    const tokonya = ambilLapak(sesiSeller.penggunaId);
+    akunNav = { label: tokonya ? tokonya.nama : 'Toko saya', href: '/akun' };
+  }
 ---
 
 <header class="header-tetap border-b border-garis bg-dasar">
@@ -31,19 +53,47 @@ const NAV = [
         </a>
       )
     }
-    {/* Di mobile(linkan ini) tujuan utamanya pindah ke bar bawah, jadi nav atas disembunyikan.
-        Kalau tidak, logo + dua link sudah melebihi lebar 360px. */}
+    {/* Di mobile linkan ini disembunyikan karena tujuan utamanya pindah ke bar
+        bawah. Kalau tidak, logo + nav penuh akan melebihi lebar 360px. Beranda
+        dan Katalog juga menyatu ke satu dokumen, jadi cukup satu link ke
+        /#katalog tanpa tab aktif yang harus bergeser saat digulir. */}
     <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
-      {
-        NAV.map((item) => (
-          <a
-            href={item.href}
-            class="target-sentuh inline-flex items-center rounded-md px-3 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
-          >
-            {item.label}
-          </a>
-        ))
-      }
+        {
+          NAV.map((item) => (
+            <a
+              href={item.href}
+              class="target-sentuh inline-flex items-center rounded-md px-3 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+            >
+              {item.label}
+            </a>
+          ))
+        }
+        <a
+          href={akunNav.href}
+          title={akunNav.label}
+          class="target-sentuh inline-flex max-w-40 items-center truncate rounded-md px-3 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+        >
+          {akunNav.label}
+        </a>
+        {/* Di halaman yang sudah punya tombol WhatsApp aksen sendiri, header
+            pakai gaya teks supaya layar itu tidak punya dua tombol aksen yang
+            mengarah ke tempat yang sama. */}
+        {wa &&
+          (tombolWa ? (
+            <a
+              href={wa}
+              class="target-sentuh ml-1 inline-flex shrink-0 items-center rounded-md bg-aksi px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+            >
+              Tanya lewat WhatsApp
+            </a>
+          ) : (
+            <a
+              href={wa}
+              class="target-sentuh ml-1 inline-flex shrink-0 items-center rounded-md px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+            >
+              Tanya lewat WhatsApp
+            </a>
+          ))}
     </nav>
   </div>
 </header>

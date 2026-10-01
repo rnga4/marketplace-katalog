@@ -67,6 +67,7 @@ const SPESIFIKASI = unit
   description={unit?.deskripsi || gabung([unit?.nama, unit?.kapasitas, unit ? rupiah(unit.harga) : '']) || undefined}
   ogImage={unit?.foto[0] ? fotoSrc(unit.foto[0], 'og') : undefined}
   kembali={{ href: '/#katalog', label: 'Katalog' }}
+  tombolWa={false}
 >
   {unit?.foto[0] && (
     <link
