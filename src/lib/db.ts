@@ -248,6 +248,116 @@ export function listUnits(): UnitHp[] {
   return rows.map((r) => barisKeUnit(r)).filter((u): u is UnitHp => u !== null);
 }
 
+/** Unit katalog lengkap dengan identitas penjualnya, untuk halaman publik. */
+export interface UnitKatalog extends UnitHp {
+  /** Nama toko penjual. Unit milik admin memakai nama toko utama. */
+  penjualNama: string;
+  lapakSlug: string | null;
+}
+
+export interface LapakFilter {
+  slug: string;
+  nama: string;
+  jumlah: number;
+}
+
+export interface KatalogQuery {
+  cari?: string;
+  lapak?: string;
+  halaman?: number;
+  perHalaman?: number;
+  /**
+   * Batasi ke unit yang masih tersedia. Default true karena kartu katalog tidak
+   * punya penanda "Terjual", jadi unit terjual akan terlihat bisa dibeli.
+   */
+  hanyaTersedia?: boolean;
+}
+
+export interface HasilKatalog {
+  unit: UnitKatalog[];
+  total: number;
+  halaman: number;
+  jumlahHalaman: number;
+}
+
+export const PER_HALAMAN = 24;
+
+/**
+ * Daftar unit untuk katalog publik: hanya yang tayang, dengan pencarian,
+ * filter penjual, dan paginasi. Query-nya satu COUNT dan satu SELECT, jadi
+ * tidak memuat seluruh tabel ke memori.
+ */
+export function katalogUnit(q: KatalogQuery = {}): HasilKatalog {
+  const perHalaman = Math.min(Math.max(q.perHalaman ?? PER_HALAMAN, 1), 96);
+  const syarat: string[] = ["hp.moderasi = 'tayang'"];
+  if (q.hanyaTersedia !== false) syarat.push('hp.tersedia = 1');
+  const nilai: (string | number)[] = [];
+
+  // Setiap kata kunci harus cocok di salah satu kolom, jadi pembagian kata
+  // memakai AND. Persen, garis bawah, dan backslash di-escape supaya pola
+  // LIKE memperlakukannya sebagai teks biasa.
+  const kata = (q.cari ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 6);
+  for (const k of kata) {
+    const pola = `%${k.replace(/[\\%_]/g, (c) => '\\' + c)}%`;
+    syarat.push(
+      "(hp.nama LIKE ? ESCAPE '\\' OR hp.merk LIKE ? ESCAPE '\\' OR hp.seri LIKE ? ESCAPE '\\' OR hp.kapasitas LIKE ? ESCAPE '\\' OR hp.warna LIKE ? ESCAPE '\\' OR hp.deskripsi LIKE ? ESCAPE '\\')",
+    );
+    nilai.push(pola, pola, pola, pola, pola, pola);
+  }
+
+  if (q.lapak) {
+    syarat.push('l.slug = ?');
+    nilai.push(q.lapak);
+  }
+
+  const where = syarat.join(' AND ');
+  const gabung =
+    'FROM hp LEFT JOIN pengguna p ON p.id = hp.pemilik_id LEFT JOIN lapak l ON l.pengguna_id = hp.pemilik_id';
+
+  const total = Number(
+    (db.prepare(`SELECT COUNT(*) AS n ${gabung} WHERE ${where}`).get(...nilai) as { n: number }).n,
+  );
+  const jumlahHalaman = Math.max(1, Math.ceil(total / perHalaman));
+  const halaman = Math.min(Math.max(q.halaman ?? 1, 1), jumlahHalaman);
+
+  const rows = db
+    .prepare(
+      `SELECT hp.*, p.nama AS penjual_nama, l.slug AS lapak_slug, l.nama AS lapak_nama
+       ${gabung} WHERE ${where}
+       ORDER BY hp.tersedia DESC, hp.harga ASC, hp.slug ASC
+       LIMIT ? OFFSET ?`,
+    )
+    .all(...nilai, perHalaman, (halaman - 1) * perHalaman) as Record<string, unknown>[];
+
+  const namaToko = ambilSite().nama;
+  const unit = rows
+    .map((r) => {
+      const u = barisKeUnit(r);
+      if (!u) return null;
+      const dariLapak = typeof r.lapak_nama === 'string' ? r.lapak_nama : '';
+      return {
+        ...u,
+        penjualNama: dariLapak || namaToko || 'Penjual katalog',
+        lapakSlug: typeof r.lapak_slug === 'string' ? r.lapak_slug : null,
+      };
+    })
+    .filter((u): u is UnitKatalog => u !== null);
+
+  return { unit, total, halaman, jumlahHalaman };
+}
+
+/** Lapak yang punya unit tayang, untuk dropdown filter penjual. */
+export function listLapakTayang(): LapakFilter[] {
+  return db
+    .prepare(
+      `SELECT l.slug, l.nama, COUNT(hp.slug) AS jumlah
+       FROM lapak l JOIN hp ON hp.pemilik_id = l.pengguna_id AND hp.moderasi = 'tayang'
+       GROUP BY l.slug, l.nama
+       ORDER BY jumlah DESC, l.nama ASC`,
+    )
+    .all() as unknown as LapakFilter[];
+}
+
 /** Semua unit termasuk yang menunggu review dan ditolak. Hanya untuk admin. */
 export function listSemuaUnits(): UnitHp[] {
   const rows = db

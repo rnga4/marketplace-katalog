@@ -1,0 +1,87 @@
+---
+/**
+ * Navigasi halaman katalog. Membangun ulang query yang sedang aktif supaya
+ * filter dan kata kunci tidak hilang saat pindah halaman.
+ */
+interface Props {
+  halaman: number;
+  jumlahHalaman: number;
+  cari: string;
+  lapak: string;
+}
+
+const { halaman, jumlahHalaman, cari, lapak } = Astro.props;
+
+const tautan = (n: number) => {
+  const p = new URLSearchParams();
+  if (cari) p.set('cari', cari);
+  if (lapak) p.set('lapak', lapak);
+  p.set('halaman', String(n));
+  // Query string sungguhan supaya server_render ulang; fragment cuma untuk
+  // menggulir ke katalog.
+  return `?${p.toString()}#katalog`;
+};
+
+const sekitar: number[] = [];
+for (let n = 1; n <= jumlahHalaman; n++) {
+  if (n === 1 || n === jumlahHalaman || Math.abs(n - halaman) <= 1) sekitar.push(n);
+}
+---
+
+{
+  jumlahHalaman > 1 && (
+    <nav
+      class="mt-8 flex flex-wrap items-center justify-center gap-1.5"
+      aria-label="Paginasi katalog"
+    >
+      <a
+        href={tautan(Math.max(1, halaman - 1))}
+        aria-disabled={halaman === 1 ? 'true' : 'false'}
+        class={`target-sentuh inline-flex h-10 items-center rounded-md border border-garis px-3 text-sm font-medium ${
+          halaman === 1
+            ? 'pointer-events-none text-stone-400'
+            : 'text-stone-700 hover:bg-stone-100'
+        }`}
+      >
+        Sebelumnya
+      </a>
+
+      {sekitar.map((n, i) => {
+        const sebelum = sekitar[i - 1];
+        const lewati = sebelum !== undefined && n - sebelum > 1;
+        return (
+          <>
+            {lewati && (
+              <span class="px-1 text-sm text-stone-400" aria-hidden="true">
+                …
+              </span>
+            )}
+            <a
+              href={tautan(n)}
+              aria-current={n === halaman ? 'page' : 'false'}
+              class={`target-sentuh inline-flex h-10 min-w-10 items-center justify-center rounded-md border px-3 text-sm font-medium ${
+                n === halaman
+                  ? 'border-aksi-teks bg-aksi-teks font-semibold text-white'
+                  : 'border-garis text-stone-700 hover:bg-stone-100'
+              }`}
+            >
+              {n}
+            </a>
+          </>
+        );
+      })}
+
+      <a
+        href={tautan(Math.min(jumlahHalaman, halaman + 1))}
+        aria-disabled={halaman === jumlahHalaman ? 'true' : 'false'}
+        class={`target-sentuh inline-flex h-10 items-center rounded-md border border-garis px-3 text-sm font-medium ${
+          halaman === jumlahHalaman
+            ? 'pointer-events-none text-stone-400'
+            : 'text-stone-700 hover:bg-stone-100'
+        }`}
+      >
+        Berikutnya
+      </a>
+    </nav>
+  )
+}

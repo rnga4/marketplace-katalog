@@ -3,7 +3,7 @@ import AkunLayout from '../../layouts/AkunLayout.astro';
 import { bacaSesi, COOKIE_AKUN } from '../../lib/auth';
 import { ambilLapak, cekKataSandiPengguna, setKataSandiPengguna, simpanLapak } from '../../lib/db';
 import { normalisasiWa } from '../../data/site';
-import { cekCsrf, teksForm } from '../../lib/forms';
+import { cekCsrf, teksForm, NOTIF } from '../../lib/forms';
 import { waValid } from '../../data/site';
 
 const pengguna = Astro.locals.pengguna!;
@@ -32,7 +32,7 @@ if (Astro.request.method === 'POST') {
     } else {
       try {
         simpanLapak(pengguna.id, { nama, whatsapp, deskripsi, lokasi });
-        ok = 'Pengaturan toko disimpan.';
+        return Astro.redirect('/akun/toko?notif=tokosimpan');
       } catch (err) {
         galat = err instanceof Error ? err.message : 'Gagal menyimpan.';
       }
@@ -49,16 +49,15 @@ if (Astro.request.method === 'POST') {
       galat = 'Ulangi kata sandi tidak sama.';
     } else {
       setKataSandiPengguna(pengguna.id, baru);
-      ok = 'Kata sandi berhasil diganti.';
+      return Astro.redirect('/akun/toko?notif=sandiberubah');
     }
   }
 }
 
+const param = Astro.url.searchParams.get('notif');
 const notif = galat
   ? { jenis: 'err' as const, teks: galat }
-  : ok
-    ? { jenis: 'ok' as const, teks: ok }
-    : null;
+  : (ok ?? (param ? NOTIF[param] : null));
 ---
 
 <AkunLayout title="Setelan toko" pengguna={pengguna} notif={notif} kembali={{ href: '/akun', label: 'Produk saya' }}>

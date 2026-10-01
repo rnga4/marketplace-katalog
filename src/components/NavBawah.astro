@@ -1,20 +1,23 @@
 ---
 import { ambilSite } from '../lib/db';
 import { linkWa } from '../data/site';
-import { bacaSesi } from '../lib/auth';
+import { bacaSesi, COOKIE_ADMIN, COOKIE_AKUN } from '../lib/auth';
 
 const site = ambilSite();
 const wa = linkWa(undefined, site.whatsapp, site.nama);
-const pemilik = bacaSesi(Astro.cookies) !== null;
+const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
+const seller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 
 const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
 const diDetail = path.startsWith('/hp/');
+const diKelola = path.startsWith('/admin');
+const diAkun = path === '/masuk' || path === '/daftar' || path.startsWith('/akun');
 
 type Tab = {
   key: string;
   label: string;
   href: string;
-  ikon: 'rumah' | 'katalog' | 'chat' | 'roda';
+  ikon: 'rumah' | 'katalog' | 'chat' | 'roda' | 'orang';
   aktif?: boolean;
 };
 
@@ -26,11 +29,24 @@ const TABS: Tab[] = [
   { key: 'katalog', label: 'Katalog', href: '/#katalog', ikon: 'katalog', aktif: diDetail },
 ];
 
-/* Dua tab sisanya tidak selalu ada. WhatsApp disembunyikan kalau nomor belum
-   diisi seller, Kelola hanya untuk pemilik yang sudah masuk, supaya tidak ada
-   tab yang mengarah ke halaman yang tidak bisa dibuka. */
+/* WhatsApp disembunyikan kalau nomor toko belum diisi, supaya tidak ada tab yang
+   mengarah ke tujuan yang tidak bisa dipakai. */
 if (wa) TABS.push({ key: 'wa', label: 'WhatsApp', href: wa, ikon: 'chat' });
-if (pemilik) TABS.push({ key: 'kelola', label: 'Kelola', href: '/admin', ikon: 'roda' });
+
+/* Tab keempat selalu ada. Admin diarahkan ke panel Kelola karena itu tempat
+   kerjanya; siapa pun selain itu, termasuk pengunjung yang belum masuk, melihat
+   Akun. Pelanggan yang belum punya akun mendarat di halaman masuk. */
+if (admin) {
+  TABS.push({ key: 'kelola', label: 'Kelola', href: '/admin', ikon: 'roda', aktif: diKelola });
+} else {
+  TABS.push({
+    key: 'akun',
+    label: 'Akun',
+    href: seller ? '/akun' : '/masuk',
+    ikon: 'orang',
+    aktif: diAkun,
+  });
+}
 ---
 
 <nav class="nav-bawah md:hidden" aria-label="Navigasi bawah">
@@ -67,6 +83,12 @@ if (pemilik) TABS.push({ key: 'kelola', label: 'Kelola', href: '/admin', ikon: '
               )}
               {tab.ikon === 'chat' && (
                 <path d="M4.4 5.4h15.2A1.6 1.6 0 0 1 21.2 7v7.4a1.6 1.6 0 0 1-1.6 1.6H9.6L5 19.1v-2.9h-.6A1.6 1.6 0 0 1 2.8 14.6V7a1.6 1.6 0 0 1 1.6-1.6Z" />
+              )}
+              {tab.ikon === 'orang' && (
+                <>
+                  <circle cx="12" cy="8.4" r="3.6" />
+                  <path d="M4.8 20.2a7.2 7.2 0 0 1 14.4 0" />
+                </>
               )}
               {tab.ikon === 'roda' && (
                 <>

@@ -8,9 +8,13 @@ import KondisiBadge from './KondisiBadge.astro';
 interface Props {
   unit: UnitHp;
   urut?: number;
+  /** Nama toko penjual. Kalau diisi, kartu jadi bisa filter per penjual. */
+  penjualNama?: string;
+  /** Slug lapak penjual, dipakai sebagai filter di katalog. */
+  lapakSlug?: string | null;
 }
 
-const { unit, urut = 0 } = Astro.props;
+const { unit, urut = 0, penjualNama, lapakSlug } = Astro.props;
 const coret = hargaTercoret(unit);
 const fotoUtama = unit.foto[0] ?? null;
 const ringkas = gabung([unit.kapasitas, unit.ram]);
@@ -44,6 +48,18 @@ const ringkas = gabung([unit.kapasitas, unit.ram]);
       {ringkas && <span class="text-xs text-stone-600">{ringkas}</span>}
     </div>
     <h3 class="text-sm font-semibold text-stone-900">{unit.nama}</h3>
+    {
+      penjualNama && (
+        <p class="truncate text-xs text-stone-500">
+          {'Dijual oleh '}
+          {lapakSlug ? (
+            <span class="underline decoration-stone-300">{penjualNama}</span>
+          ) : (
+            <span>{penjualNama}</span>
+          )}
+        </p>
+      )
+    }
     <div class="flex items-baseline gap-2">
       {
         coret ? (

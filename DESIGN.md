@@ -1,12 +1,23 @@
 # Arah desain: Katalog HP Bekas + Panel Admin
 
-Status: **draf, dirangkum agent atas pilihan "agent yang usulkan".** Ini referensi tampilan awal, bukan ketetapan dari pemilik. Kalau nama toko, nomor WhatsApp, atau warna sudah punya ketetapan, ganti bagian Identitas dan Palet di sini duluan, baru sesuaikan komponennya.
+Status: **sudah jadi ketetapan.** Bagian Identitas, Palet, dan Motif mengikat. Perubahan di sini harus dibahas lebih dulu, bukan diam-diam menyesuaikan komponen.
 
 ## Identitas
 
-Katalog HP bekas milik penjual perorangan. Fokusnya ke dua hal: foto unit yang jujur dan harga yang jelas. Pembeli utama orang yang sedang mencari HP second dan mau tahu persis kondisi unitnya sebelum tanya harga. Nada bicara lugas dan pendek, tidak ada kata "terbaik", "mulus 100%", atau "harga termurah" tanpa bukti (R-16, R-17, R-36).
+Marketplace katalog HP bekas. Ada toko katalog utama, ditambah seller yang mendaftar sendiri. Tiap seller punya satu lapak dengan nama dan nomor WhatsApp sendiri. Fokusnya tetap ke dua hal: foto unit yang jujur dan harga yang jelas. Pembeli utama orang yang sedang mencari HP second dan mau tahu persis kondisi unitnya sebelum tanya harga, lalu menghubungi penjualnya langsung lewat WhatsApp. Nada bicara lugas dan pendek, tidak ada kata "terbaik", "mulus 100%", atau "harga termurah" tanpa bukti (R-16, R-17, R-36).
 
-Tidak menampilkan angka statistik penjualan, jumlah pengikut, atau testimoni. Tidak ada yang bisa diverifikasi, jadi tidak ditampilkan (R-17, R-18).
+Tidak menampilkan angka statistik penjualan, jumlah pengikut, atau testimoni. Tidak ada yang bisa diverifikasi, jadi tidak ditampilkan (R-17, R-18). Jumlah unit dan jumlah penjual di beranda adalah hitungan nyata dari katalog, bukan angka pem convincingly.
+
+## Multi-seller: batas yang sudah diputuskan
+
+Bagian ini mengikat, karena di sinilah celah yang bisa dipakai seller untuk menyalahgunakan fitur:
+
+- **Satu akun satu lapak.** Satu akun punya paling banyak satu baris di `lapak`. Tidak ada lapak tambahan dan tidak ada nama dagang. Kalau seller butuh lapak kedua, itu model bisnis lain dan perlu keputusan baru.
+- **Tidak ada keranjang, tidak ada pesanan, tidak ada alamat, tidak ada pembayaran daring.** Transaksi terjadi di luar situs: pembeli tanya lewat WhatsApp, seller membalas, transfer di luar sistem. Karena itu tidak ada layar yang meminta alamat, ongkos kirim, atau nomor transaksi.
+- **Nomor WhatsApp tidak pernah diwariskan.** `waKontak()` mengembalikan nomor lapak seller untuk unit milik seller, dan nomor toko hanya untuk unit milik admin. Kalau seller belum mengisi nomor, nomornya tetap kosong dan tombol WhatsApp disembunyikan, bukan jatuh ke nomor toko. Kalau tidak begitu, pesanan pembeli terkirim ke orang yang tidak menjual unit itu.
+- **Seller hanya boleh menyentuh miliknya.** `listUnitsPemilik()` adalah satu-satunya sumber data untuk halaman `/akun`, dan edit atau hapus selalu mengecek kepemilikan sebelum menulis. `saringFoto()` menjaga supaya seller tidak bisa memasang file milik orang lain dengan menebak nama file.
+- **Moderasi wajib dan seller tidak bisa lolos sendiri.** Status unit tidak pernah datang dari formulir; `createUnit` menurunkannya dari siapa pemiliknya, dan setiap edit pada unit seller mengembalikannya ke antrean. Menolak berarti mengisi alasan, dan seller melihat alasan itu di `/akun` supaya tahu apa yang harus diperbaiki.
+
 
 ## Palet
 
@@ -51,6 +62,18 @@ Tidak boleh ada penanda "Mulus" pada unit yang tidak layak disebut mulus (R-36).
 
 Galeri memakai satu tombol aktif pada satu waktu, ditandai `aria-pressed` dan garis aksen 2px. Foto utama ikut punya thumbnail-nya sendiri, jadi tidak ada foto yang tidak bisa dikembalikan setelah diganti. Label setiap tombol menyebut posisinya ("Tampilkan foto 2 dari 4"), karena label yang sama untuk semua tombol tidak bisa dibedakan pembaca layar.
 
+## Katalog: paginasi, pencarian, filter penjual
+
+Katalog tidak pernah memuat seluruh tabel. `katalogUnit()` di `src/lib/db.ts` menjalankan satu `COUNT` dan satu `SELECT` berparameter, lalu mengiris sendiri di SQL dengan `LIMIT`/`OFFSET`. Kalau katalog tumbuh ke ribuan unit, halaman `/` tetap memuat 24 baris, bukan semuanya.
+
+- **Pencarian.** Kata kunci dipecah per kata dan setiap kata harus cocok (AND) di nama, merek, seri, storage, warna, atau deskripsi. `%`, `_`, dan `\` di kata kunci di-escape supaya `LIKE` memperlakukannya sebagai teks biasa, bukan wildcard. Maksimal enam kata, supaya query tidak bisa dipakai membebani database.
+- **Filter penjual.** Dropdown diisi `listLapakTayang()`, yaitu lapak yang punya minimal satu unit tayang. Jadi tidak ada pilihan yang hasilnya selalu kosong.
+- **Paginasi.** 24 unit per halaman, ditampilkan kalau ada lebih dari satu halaman. Nomor halaman yang melompat diganti elipsis, dan halaman di luar rentang dijepit ke rentang yang ada, jadi `?halaman=999` tidak menghasilkan halaman kosong. Tiap link membawa `cari` dan `lapak` yang sedang aktif supaya filter tidak hilang.
+- **Filter tidak butuh JavaScript.** Formulernya `GET` ke `/#katalog`, jadi pencarian tetap jalan kalau skrip gagal dimuat, dan hasilnya bisa dibagikan lewat tautan.
+- **Nomor halaman dirantai sebagai query sungguhan, bukan fragment.** `?cari=GB&halaman=2#katalog`. Fragment yang berisi query (`#katalog?cari=GB`) tidak pernah sampai ke server, jadi paginasi tidak akan bekerja.
+
+Kartu katalog menampilkan nama penjual (`Dijual oleh ...`) supaya pembeli tahu siapa yang akan dihubungi, dan ke mana harus balik kalau unitnya sudah terjual.
+
 ## Katalog hanya menampilkan unit tersedia
 
 Grid katalog publik memfilter `tersedia = 1`, jadi kartu tidak pernah menampilkan label "Terjual". Konsekuensinya kartu tidak punya cabang status apa pun: unit yang sudah terjual tidak tampil di katalog, dan orang yang mau mencari unit serupa diarahkan lewat WhatsApp dari halaman detail unit terjual. Kalau nanti toko memilih menampilkan unit terjual sebagai bukti kondisi yang jujur, itu keputusan isi konten, bukan perbaikan UI, dan label statusnya perlu ditambahkan kembali ke kartu dengan kontras yang diukur.
@@ -79,7 +102,10 @@ MOTION 1: hanya hover dan transisi halus saat ganti foto galeri. Tidak ada loop,
 Navigasi mengikuti cara orang memakai katalog di HP, bukan tata letak dokumen.
 
 - **Tombol kembali di kiri atas, halaman demi halaman.** Halaman yang punya halaman sebelumnya menampilkan chevron kiri plus nama tujuannya (`← Katalog`, `← Unit katalog`), menggantikan logo toko di sisi itu. Logo pindah ke footer yang sudah menampilkannya, jadi branding tidak hilang. Beranda tidak punya tombol kembali karena tidak ada halaman sebelumnya, dan tombol kembali yang ada selalu menyisakan `href` yang benar: tanpa JavaScript tetap sampai ke katalog, dan `history.back()` cuma dipakai kalau `referrer` masih di situs ini, supaya pengunjung dari tautan WhatsApp tidak justru dilempar keluar.
-- **Tujuan utama pindah ke bar bawah di bawah 768px.** Dua tautan nav atas tidak muat bersama logo di 360px, jadi di lebar itu nav atas disembunyikan dan digantikan bar bawah: Beranda, Katalog, lalu WhatsApp dan Kelola yang hanya muncul kalau bisa benar-benar dipakai (nomor sudah diisi seller, atau pemilik sudah masuk). Di atas 768px bar bawah hilang dan nav atas kembali, karena bar fixed di monitor besar cuma memakan ruang. Ikonnya digambar sendiri sebagai glyph fungsional (rumah, grid, gelembung, roda setelan), bukan dari set ikon generik.
+- **Tujuan utama pindah ke bar bawah di bawah 768px.** Dua tautan nav atas tidak muat bersama logo di 360px, jadi di lebar itu nav atas disembunyikan dan digantikan bar bawah: Beranda, Katalog, WhatsApp, lalu tab keempat yang selalu ada. Di atas 768px bar bawah hilang dan nav atas kembali, karena bar fixed di monitor besar cuma memakan ruang. Ikonnya digambar sendiri sebagai glyph fungsional (rumah, grid, gelembung, roda setelan, orang), bukan dari set ikon generik.
+
+- **Tab keempat mengikuti siapa yang sedang masuk.** Admin diarahkan ke `Kelola` karena itu tempat kerjanya. Siapa pun selain itu, termasuk pengunjung yang belum masuk, melihat `Akun`: seller yang sudah masuk mendarat di `/akun`, pengunjung lain mendarat di `/masuk`. Tidak ada tab kelima, jadi bar bawah selalu empat item.
+- **WhatsApp tidak dihapus dari bar bawah.** Rencana awal berbunyi tab Akun *menggantikan* tab WhatsApp, dengan alasan pembeli jangan sampai kehilangan kontak. Alasan itu sudah tidak berlaku begitu halaman seller jadi ada, jadi tidak ada yang perlu dikorbankan: kontak WhatsApp tetap satu klik dari beranda, sementara seller dan pembeli baru punya pintu masuk yang jelas.
 - **Bar bawah tidak menutup isi.** Tinggisanya 3.75rem dan ruang bawah halaman dipesan dengan token yang sama, ditambah `env(safe-area-inset-bottom)` supaya tidak tertutup gesture bar iPhone. Target sentuh tiap tab 60px, di atas minimum 44px.
 - **Tab aktif ditandai warna dan tebal, bukan titik atau badge.** Penanda posisi bukan informasi baru, jadi tidak perlu bentuk tambahan. Beranda dan Katalog menunjuk satu dokumen yang sama, jadi tab aktif bergeser mengikuti posisi gulir lewat `IntersectionObserver`, bukan ditentukan sekali di server.
 - **Detail unit tidak lagi punya breadcrumb.** Tombol kembali di header sudah menjawab "ke mana dan ke mana saja", jadi baris `Katalog / nama` di atas hanya mengulanginya.
@@ -106,6 +132,9 @@ Panel admin bukan halaman pemasaran, jadi gaya utilitarian: rapat, tanpa hero, t
 - **Bukti sebelum merusak.** Hapus unit selalu dua langkah: klik "Hapus" memunculkan konfirmasi yang menyebut nama unit dan akibatnya, baru tombol "Ya, hapus". Panel konfirmasi muncul di baris unit itu, bukan di atas daftar, lalu digulir ke tengah layar dan fokusnya ditarik ke tombol "Ya, hapus". Di atas daftar, seller harus menggulir ulang dari awal hanya untuk membaca peringatan. Feedback setelah aksi berupa satu baris pesan di atas konten, hilang saat halaman berikutnya dimuat (lewat parameter `?notif=`), bukan toast yang menumpuk. Karena itu halaman admin hanya melompat ke atas kalau ada pesan; halaman konfirmasi hapus mengatur posisinya sendiri.
 - **State kosong.** "Belum ada unit" ditulis sebagai kalimat biasa dengan satu aksi lanjutan, bukan ilustrasi. Di halaman publik berlaku aturan yang sama: bagian yang tidak punya isi tidak dikosongkan diam-diam. Deskripsi, Spesifikasi, dan Kelengkapan yang kosong diganti kalimat jujur yang memberi langkah lanjut, sementara "Kondisi unit" yang kosong hilang altogether, mengikuti guard yang sudah dipakai di `catatan`. Subjudul dan kartu memakai helper `gabung()` di `src/lib/format.ts` supaya pemisah `·` tidak pernah berdiri sendiri saat field opsional kosong.
 - **Form.** Label selalu ada di atas field (tanpa placeholder sebagai label), field wajib ditandai `<b>*</b>`, bantuan field seperti "satu per baris" ditulis kecil di bawahnya. Area unggah foto menampilkan thumbnail hasil unggahan sebelumnya supaya seller tahu foto mana yang sudah terpasang.
+- **Moderasi.** Unit seller masuk antrean, bukan daftar. Halaman `/admin/moderasi` memuat satu kartu per unit: foto, kondisi, harga, deskripsi, nama dan email penjual, link ke lapaknya, dan peringatan kalau seller belum mengisi nomor WhatsApp. Unit yang pernah ditolak menampilkan alasan sebelumnya supaya admin tidak perlu membuka akun seller untuk tahu konteksnya. Alasannya wajib diisi saat menolak, karena itulah yang dibaca seller di `/akun`.
+- **Tiga status, bukan dua.** Menunggu, tayang, dan ditolak masing-masing punya tab dan penghitung, jadi produk yang ditarik tidak hilang begitu saja dan bisa ditinjau ulang tanpa mencari tahu dari mana.
+- **Pakai banner, bukan navigasi tambahan.** Jumlah antrean muncul sebagai banner di `/admin` dan badge di navigasi admin, jadi admin tahu ada yang menunggu tanpa harus membuka `/admin/moderasi` dulu.
 - **Batasan admin.** Layout admin dan halaman login memakai `noindex, nofollow`. Panel ini tidak untuk indeks mesin pencari.
 ## Foto: satu unggah, tiga ukuran
 

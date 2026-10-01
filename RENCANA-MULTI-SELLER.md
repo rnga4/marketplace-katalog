@@ -116,9 +116,19 @@ Pemicu migrasi: seller mengeluh lambat saat mengunggah, `SQLITE_BUSY` muncul di 
 - [x] 1.3 Halaman `/daftar`, `/masuk`, `/akun`
 - [x] 1.4 WhatsApp per seller
 - [x] 1.5 Moderasi wajib dan `/admin/moderasi`
-- [ ] 1.6 Pagination, pencarian, filter seller di katalog
-- [ ] 1.7 Tab "Akun" di bar bawah
-- [ ] 1.8 Perbarui `DESIGN.md` dan `README.md`
+- [x] 1.6 Pagination, pencarian, filter seller di katalog
+- [x] 1.7 Tab "Akun" di bar bawah
+- [x] 1.8 Perbarui `DESIGN.md` dan `README.md`
+
+## Catatan penyelesaian
+
+Tahap 1 selesai dan sudah dideploy. Yang berubah dari rencana awal:
+
+- **Tab WhatsApp tidak dihapus dari bar bawah.** Rencana awal berbunyi tab "Akun" *menggantikan* tab WhatsApp dengan alasan pembeli jangan kehilangan kontak. Begitu halaman seller selesai, alasan itu tidak berlaku lagi, jadi WhatsApp tetap satu klik dan "Akun" jadi tab keempat. Bar bawah selalu empat item.
+- **Katalog tetap hanya menampilkan unit tersedia.** `katalogUnit()` punya opsi `hanyaTersedia` yang default aktif, karena kartu katalog tidak punya penanda "Terjual". Menampilkan unit terjual di katalog adalah keputusan isi konten, bukan perbaikan UI: perlu label status di kartu lebih dulu.
+- **Verifikasi email belum ada.** Akun seller langsung aktif setelah daftar. Untuk tahap katalog ini cukup, tapi seller yang nakal tidak punya jalur lain untuk dihubungi selain nomor WhatsApp yang dia isi sendiri.
+
+Yang sengaja tidak dikerjakan di tahap 1: PostgreSQL, object storage, Redis, dan multi-admin. Alasannya ada di bagian risiko skala di atas.
 
 Setiap langkah: `npx astro check` bersih, `npm run build` lolos, lalu klik lewat di Chrome headless dari 360 sampai 1280 piksel. Hasilnya dilaporkan sebelum lanjut ke langkah berikutnya.
 
