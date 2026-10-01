@@ -9,6 +9,8 @@ interface Props {
   kembali?: { href: string; label: string } | null;
   /** Halaman ini sudah punya tombol WhatsApp aksen sendiri, jadi header tidak boleh menirunya. */
   tombolWa?: boolean;
+  /** Nomor tujuan tombol header, kalau halaman ini punya nomor yang lebih tepat. */
+  wa?: string | null;
 }
 
 const site = ambilSite();
@@ -17,7 +19,7 @@ const tombolWa = Astro.props.tombolWa ?? true;
 
 const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
 const sesiSeller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
-const wa = linkWa(undefined, site.whatsapp, site.nama);
+const wa = Astro.props.wa ?? linkWa(undefined, site.whatsapp, site.nama);
 
 /* Nav penuh, bukan hamburger. Empat item muat tanpa tekanan di lebar desktop,
    dan menyembunyikannya di balik tombol berarti menambah satu klik ke setiap

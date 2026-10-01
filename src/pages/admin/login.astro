@@ -6,7 +6,7 @@ import { buatCsrf, buatToken, cookieAman, COOKIE_ADMIN } from '../../lib/auth';
 import { cekKataSandi, ambilAdmin } from '../../lib/db';
 import { teksForm } from '../../lib/forms';
 import { sleep } from '../../lib/waktu';
-import { terkunci, catatGagal, bersihkan } from '../../lib/ratelimit';
+import { terkunci, catatGagal, bersihkan, type Kunci } from '../../lib/ratelimit';
 import Kembali from '../../components/Kembali.astro';
 
 const csrf = buatCsrf();
@@ -22,11 +22,12 @@ if (Astro.request.method === 'POST') {
     galat = 'Gagal verifikasi formulir. Muat ulang halaman lalu coba lagi.';
   } else {
     const ip = Astro.request.headers.get('cf-connecting-ip') ?? Astro.clientAddress;
-    const dikunci = terkunci(ip);
+    const kunci: Kunci = [`admin:ip:${ip}`];
+    const dikunci = terkunci(kunci);
     const benar = !dikunci && cekKataSandi(teksForm(fd, 'kataSandi'));
     await sleep(450);
     if (benar) {
-      bersihkan(ip);
+      bersihkan(kunci);
       const aman = cookieAman(Astro.request, Astro.url);
       Astro.cookies.set('hp_csrf', '', { path: '/', maxAge: 0 });
       Astro.cookies.set(COOKIE_ADMIN, buatToken(admin!.id, 'admin', buatCsrf()), {
@@ -38,7 +39,7 @@ if (Astro.request.method === 'POST') {
       });
       masuk = true;
     } else {
-      if (!dikunci) catatGagal(ip);
+      if (!dikunci) catatGagal(kunci);
       galat = dikunci ? 'Terlalu banyak percobaan. Coba lagi 15 menit lagi.' : 'Kata sandi salah.';
     }
   }
