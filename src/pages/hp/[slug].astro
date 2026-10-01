@@ -1,14 +1,18 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getUnit, hargaTercoret, ambilSite } from '../../lib/db';
-import { rupiah, gabung } from '../../lib/format';
-import { linkWa } from '../../data/site';
+import { getUnit, hargaTercoret, ambilSite, waKontak } from '../../lib/db';
+import { rupiah, gabung, namaVt } from '../../lib/format';
+import { linkWa, urlAbsolut } from '../../data/site';
 import { fotoSrc, fotoSrcSet } from '../../lib/foto';
 import KondisiBadge from '../../components/KondisiBadge.astro';
 import NotFoundView from '../../components/NotFoundView.astro';
 
 const slug = Astro.params.slug ?? '';
-const unit = getUnit(slug);
+const ditemukan = getUnit(slug);
+
+// Unit yang belum lolos review tidak boleh bocor lewat URL, meskipun pembeli
+// menebak slug-nya. Hanya seller-nya sendiri yang boleh membukanya lewat /akun.
+const unit = ditemukan && ditemukan.moderasi === 'tayang' ? ditemukan : null;
 
 if (!unit) {
   Astro.response.status = 404;
@@ -20,9 +24,29 @@ const pesanWa = unit
   ? `Halo, saya tertarik dengan ${unit.nama} (${gabung([unit.kapasitas, unit.warna])}), ${rupiah(unit.harga)}. Masih tersedia?\n${new URL(`/hp/${unit.slug}`, Astro.site ?? 'http://localhost:8096').href}`
   : '';
 const site = ambilSite();
-const linkWaUnit = unit ? linkWa(pesanWa, site) : null;
-const linkWaSerupa = linkWa(`Halo, ${unit?.nama ?? 'satu unit'} sudah terjual. Ada unit lain yang mirip?`, site);
+const nomorWaUnit = unit ? waKontak(unit, site.whatsapp) : '';
+const linkWaUnit = unit ? linkWa(pesanWa, nomorWaUnit, site.nama) : null;
+const linkWaSerupa = unit ? linkWa(`Halo, ${unit.nama} sudah terjual. Ada unit lain yang mirip?`, nomorWaUnit, site.nama) : null;
 const ringkas = unit ? gabung([unit.kapasitas, unit.ram, unit.warna]) : '';
+
+const urlUnit = unit ? urlAbsolut(`/hp/${unit.slug}`, Astro.site) : '';
+const jsonLd = unit
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: unit.nama,
+      image: unit.foto.map((f) => urlAbsolut(fotoSrc(f, 'besar'), Astro.site)),
+      description: unit.deskripsi || undefined,
+      itemCondition: 'https://schema.org/UsedCondition',
+      offers: {
+        '@type': 'Offer',
+        url: urlUnit,
+        priceCurrency: 'IDR',
+        price: unit.harga,
+        availability: unit.tersedia ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+      },
+    }
+  : null;
 
 const SPESIFIKASI = unit
   ? ([
@@ -33,6 +57,7 @@ const SPESIFIKASI = unit
       { label: 'Warna', isi: unit.warna },
       { label: 'Layar', isi: unit.layar },
       { label: 'Baterai', isi: unit.baterai },
+      { label: 'IMEI', isi: unit.imei },
     ] as const)
   : ([] as const);
 ---
@@ -40,27 +65,31 @@ const SPESIFIKASI = unit
 <BaseLayout
   title={judulSeo}
   description={unit?.deskripsi || gabung([unit?.nama, unit?.kapasitas, unit ? rupiah(unit.harga) : '']) || undefined}
-  ogImage={unit?.foto[0] ? fotoSrc(unit.foto[0], 'besar') : undefined}
+  ogImage={unit?.foto[0] ? fotoSrc(unit.foto[0], 'og') : undefined}
+  kembali={{ href: '/#katalog', label: 'Katalog' }}
 >
+  {unit?.foto[0] && (
+    <link
+      rel="preload"
+      as="image"
+      slot="head"
+      href={fotoSrc(unit.foto[0], 'sedang')}
+      imagesrcset={fotoSrcSet(unit.foto[0])}
+      imagesizes="(min-width: 768px) 560px, 100vw"
+      fetchpriority="high"
+    />
+  )}
+  {jsonLd && (
+    <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd).replace(/</g, '\\u003c')} />
+  )}
   {
     !unit ? (
       <NotFoundView />
     ) : (
       <section class="seks-luas mx-auto max-w-5xl px-4 sm:px-6">
-        <nav class="mb-6 text-sm text-stone-600" aria-label="Breadcrumb">
-          <a
-            href="/#katalog"
-            class="target-sentuh -my-3 inline-flex items-center rounded-md px-1 py-3 hover:text-aksi-teks"
-          >
-            Katalog
-          </a>
-          <span class="mx-2" aria-hidden="true">/</span>
-          <span class="text-stone-900">{unit.nama}</span>
-        </nav>
-
         <div class="grid gap-10 md:grid-cols-2 md:gap-12">
           <div>
-            <div class="aspect-[4/5] overflow-hidden rounded-md bg-stone-100">
+            <div class="aspect-[4/5] overflow-hidden rounded-md bg-stone-100" style={`view-transition-name:${namaVt(unit.slug)}`}>
               {
                 unit.foto[0] && (
                   <img
@@ -126,7 +155,7 @@ const SPESIFIKASI = unit
                 unit.tersedia ? (
                   linkWaUnit && (
                     <a
-                      href={linkWaUnit}
+                      href={`/go/${unit.slug}`}
                       class="target-sentuh inline-flex w-full items-center justify-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800"
                     >
                       Tanya lewat WhatsApp
@@ -231,6 +260,14 @@ const SPESIFIKASI = unit
   const utama = document.getElementById('foto-utama') as HTMLImageElement | null;
   if (tombol.length && utama) {
     const pilih = (aktif: HTMLButtonElement) => {
+      const url = new URL(aktif.dataset.foto ?? '', location.href).href;
+      if (aktif.dataset.foto && url !== utama.src) {
+        utama.classList.add('foto-tunggu');
+        const buka = () => utama.classList.remove('foto-tunggu');
+        utama.addEventListener('load', buka, { once: true });
+        utama.addEventListener('error', buka, { once: true });
+        setTimeout(buka, 1500);
+      }
       utama.src = aktif.dataset.foto ?? utama.src;
       utama.srcset = aktif.dataset.fotoSet || '';
       for (const lain of tombol) {

@@ -74,6 +74,18 @@ ENERGY 1: tidak ada badge di atas H1, tidak ada radial orb, tidak ada glow. H1 l
 
 MOTION 1: hanya hover dan transisi halus saat ganti foto galeri. Tidak ada loop, tidak ada pulse, tidak ada parallax, tidak ada scroll-reveal, dan tidak ada `scroll-behavior: smooth`. Lompatan ke anchor langsung pindah posisi, karena gerakan yang tidak ada alasan tertulis akan jadi wallpaper (R-19).
 
+## Navigasi: kembali di header, tujuan utama di bawah
+
+Navigasi mengikuti cara orang memakai katalog di HP, bukan tata letak dokumen.
+
+- **Tombol kembali di kiri atas, halaman demi halaman.** Halaman yang punya halaman sebelumnya menampilkan chevron kiri plus nama tujuannya (`← Katalog`, `← Unit katalog`), menggantikan logo toko di sisi itu. Logo pindah ke footer yang sudah menampilkannya, jadi branding tidak hilang. Beranda tidak punya tombol kembali karena tidak ada halaman sebelumnya, dan tombol kembali yang ada selalu menyisakan `href` yang benar: tanpa JavaScript tetap sampai ke katalog, dan `history.back()` cuma dipakai kalau `referrer` masih di situs ini, supaya pengunjung dari tautan WhatsApp tidak justru dilempar keluar.
+- **Tujuan utama pindah ke bar bawah di bawah 768px.** Dua tautan nav atas tidak muat bersama logo di 360px, jadi di lebar itu nav atas disembunyikan dan digantikan bar bawah: Beranda, Katalog, lalu WhatsApp dan Kelola yang hanya muncul kalau bisa benar-benar dipakai (nomor sudah diisi seller, atau pemilik sudah masuk). Di atas 768px bar bawah hilang dan nav atas kembali, karena bar fixed di monitor besar cuma memakan ruang. Ikonnya digambar sendiri sebagai glyph fungsional (rumah, grid, gelembung, roda setelan), bukan dari set ikon generik.
+- **Bar bawah tidak menutup isi.** Tinggisanya 3.75rem dan ruang bawah halaman dipesan dengan token yang sama, ditambah `env(safe-area-inset-bottom)` supaya tidak tertutup gesture bar iPhone. Target sentuh tiap tab 60px, di atas minimum 44px.
+- **Tab aktif ditandai warna dan tebal, bukan titik atau badge.** Penanda posisi bukan informasi baru, jadi tidak perlu bentuk tambahan. Beranda dan Katalog menunjuk satu dokumen yang sama, jadi tab aktif bergeser mengikuti posisi gulir lewat `IntersectionObserver`, bukan ditentukan sekali di server.
+- **Detail unit tidak lagi punya breadcrumb.** Tombol kembali di header sudah menjawab "ke mana dan ke mana saja", jadi baris `Katalog / nama` di atas hanya mengulanginya.
+
+Panel admin tidak memakai bar bawah. Padat dan sering dipakai membandingkan isi, jadi menu tetap di atas dalam satu baris yang membungkus.
+
 ## Larangan
 
 - Angka, harga, atau status unit yang sumbernya tidak jelas
@@ -115,3 +127,7 @@ Nama toko dan nomor WhatsApp duluan ditulis di `src/data/site.ts`, yang berarti 
 - **Nomor boleh dikosongkan.** Nilai bawaan punya `whatsapp` kosong, dan `linkWa()` mengembalikan `null` kalau nomornya tidak ada. Semua tombol WhatsApp hilang dari halaman publik, dashboard admin memberi tahu nomornya belum diisi, dan tidak ada nomor karangan yang tidak sengaja diklik. Memasang nomor lebih baik daripada menampilkan tombol yang salah.
 - **Bentuk nomor dinormalkan sekali.** Seller boleh mengetik `08xx` atau `+62xx`; yang tersimpan dan terpakai selalu `62xx`. Pengetikan ulang tidak perlu dan tidak ada nomor yang bisa salah tempel ke dua format berbeda.
 - **Logo mengikuti nama.** Kotak header memakai inisial nama toko, jadi branding ikut berubah begitu nama diisi dan tidak perlu file logo dulu.
+
+## Update gerak (permintaan pemilik, menggantikan MOTION 1 di atas)
+
+Pemilik meminta pengalaman yang lebih hidup. Yang berlaku sekarang: crossfade antar halaman (view transitions native, header tetap), foto kartu ke detail sebagai shared element, fade-in foto saat selesai dimuat, kartu katalog naik bergantian saat halaman dibuka, umpan balik tekan pada tombol, dan spinner di tombol submit admin. Semua di bawah `prefers-reduced-motion: no-preference`, kecuali spinner. Tetap dilarang: loop tanpa henti, pulse, parallax, scroll-reveal, dan `scroll-behavior: smooth`.

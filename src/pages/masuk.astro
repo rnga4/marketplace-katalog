@@ -1,0 +1,139 @@
+---
+import '@fontsource-variable/plus-jakarta-sans';
+import '../styles/global.css';
+
+import { buatCsrf, cookieAman, buatToken, COOKIE_AKUN } from '../lib/auth';
+import { ambilPenggunaByEmail, cekKataSandiPengguna } from '../lib/db';
+import { teksForm } from '../lib/forms';
+import { sleep } from '../lib/waktu';
+import { terkunci, catatGagal, bersihkan } from '../lib/ratelimit';
+import Kembali from '../components/Kembali.astro';
+
+const csrf = buatCsrf();
+let galat: string | null = null;
+let info: string | null = null;
+
+if (Astro.url.searchParams.get('daftar') === '1') {
+  info = 'Akun berhasil dibuat. Silakan masuk dengan email dan kata sandi yang kamu daftarkan.';
+}
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  const dariCookie = Astro.cookies.get('hp_csrf')?.value;
+  if (!dariCookie || teksForm(fd, 'csrf') !== dariCookie) {
+    galat = 'Gagal verifikasi formulir. Muat ulang halaman lalu coba lagi.';
+  } else {
+    const email = teksForm(fd, 'email').toLowerCase();
+    const sandi = teksForm(fd, 'kataSandi');
+    const ip = Astro.request.headers.get('cf-connecting-ip') ?? Astro.clientAddress;
+    const kunci = `seller:${ip}:${email || 'tanpa-email'}`;
+    const dikunci = terkunci(kunci);
+    const pengguna = !dikunci && email.includes('@') ? ambilPenggunaByEmail(email) : null;
+    const benar = !!pengguna && pengguna.status === 'aktif' && cekKataSandiPengguna(email, sandi);
+    await sleep(450);
+    if (benar && pengguna) {
+      bersihkan(kunci);
+      const aman = cookieAman(Astro.request, Astro.url);
+      Astro.cookies.set('hp_csrf', '', { path: '/', maxAge: 0 });
+      Astro.cookies.set(COOKIE_AKUN, buatToken(pengguna.id, 'seller', buatCsrf()), {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: aman,
+        maxAge: 7 * 24 * 60 * 60,
+      });
+      return Astro.redirect('/akun');
+    } else {
+      if (!dikunci) catatGagal(kunci);
+      galat = dikunci
+        ? 'Terlalu banyak percobaan login. Coba lagi 15 menit lagi.'
+        : 'Email atau kata sandi salah, atau akun kamu ditangguhkan.';
+    }
+  }
+}
+
+if (!galat && !info) {
+  Astro.cookies.set('hp_csrf', csrf, {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: cookieAman(Astro.request, Astro.url),
+    maxAge: 3600,
+  });
+}
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Masuk sebagai penjual</title>
+    <link rel="icon" type="image/png+xml" href="/favicon.png" />
+  </head>
+  <body class="bg-dasar font-sans text-stone-900 antialiased">
+    <main class="flex min-h-dvh flex-col px-4 py-4">
+      <Kembali href="/" label="Beranda" mandiri />
+
+      <div class="flex flex-1 items-center justify-center py-12">
+        <div class="w-full max-w-sm">
+          <div class="mb-8 text-center">
+            <span class="mx-auto flex size-10 items-center justify-center rounded-md bg-stone-900 font-sans text-sm font-bold text-white">
+              HP
+            </span>
+            <h1 class="mt-4 text-xl font-bold tracking-tight text-stone-900">Masuk ke toko</h1>
+            <p class="mt-1 text-sm text-stone-600">Kelola produkmu dan lapak sendiri.</p>
+          </div>
+
+          {
+            galat && (
+              <div class="mb-4 rounded-md border border-red-700 bg-red-50 px-4 py-3 text-sm text-red-900" role="alert">
+                {galat}
+              </div>
+            )
+          }
+          {
+            info && (
+              <div class="mb-4 rounded-md border border-emerald-700 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
+                {info}
+              </div>
+            )
+          }
+
+          <form method="post" action="/masuk" class="flex flex-col gap-4">
+            <input type="hidden" name="csrf" value={csrf} />
+            <label class="flex flex-col gap-1.5">
+              <span class="text-sm font-medium text-stone-900">Email</span>
+              <input
+                type="email"
+                name="email"
+                required
+                autocomplete="email"
+                class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+              />
+            </label>
+            <label class="flex flex-col gap-1.5">
+              <span class="text-sm font-medium text-stone-900">Kata sandi</span>
+              <input
+                type="password"
+                name="kataSandi"
+                required
+                autocomplete="current-password"
+                minlength="1"
+                class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+              />
+            </label>
+            <button type="submit" class="target-sentuh inline-flex items-center justify-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">
+              Masuk
+            </button>
+          </form>
+
+          <p class="mt-6 text-center text-xs text-stone-500">
+            Belum punya toko? <a href="/daftar" class="font-medium text-aksi-teks underline">Daftar sekarang</a>
+          </p>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

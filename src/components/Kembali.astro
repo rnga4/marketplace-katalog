@@ -1,0 +1,50 @@
+---
+/**
+ * Tombol kembali untuk halaman yang punya halaman sebelumnya.
+ *
+ * `href` selalu berisi tujuan yang benar, jadi tanpa JavaScript pun tombol ini
+ * tetap sampai ke halaman yang valid. JavaScript cuma mengiringnya jadi
+ * `history.back()` supaya kembali ke halaman yang benar-benar dibuka sebelum ini,
+ * bukan melompat ke tujuan statis. `referrer` dicek supaya pengunjung yang datang
+ * dari luar situs (misalnya tautan WhatsApp) tidak justru dilempar keluar.
+ */
+interface Props {
+  href: string;
+  label: string;
+  /** Untuk halaman tanpa header, tombolnya jadi anak `main` yang butuh `self-start`. */
+  mandiri?: boolean;
+}
+
+const { href, label, mandiri = false } = Astro.props;
+
+const kelas = `target-sentuh -ml-2 inline-flex min-w-0 items-center gap-1.5 rounded-md py-2 pr-2 text-sm font-medium text-stone-700 hover:text-aksi-teks${mandiri ? ' self-start' : ''}`;
+---
+
+<a href={href} data-kembali class={kelas}>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.25"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="size-5 shrink-0"
+    aria-hidden="true"
+  >
+    <path d="M14.5 5 8 12l6.5 7" />
+  </svg>
+  <span class="truncate">{label}</span>
+</a>
+
+<script>
+  for (const el of document.querySelectorAll<HTMLAnchorElement>('[data-kembali]')) {
+    el.addEventListener('click', (e) => {
+      const ref = document.referrer;
+      const dariSini = ref !== '' && new URL(ref, location.href).origin === location.origin;
+      if (dariSini && history.length > 1) {
+        e.preventDefault();
+        history.back();
+      }
+    });
+  }
+</script>

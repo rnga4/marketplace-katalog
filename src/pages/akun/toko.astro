@@ -1,0 +1,139 @@
+---
+import AkunLayout from '../../layouts/AkunLayout.astro';
+import { bacaSesi, COOKIE_AKUN } from '../../lib/auth';
+import { ambilLapak, cekKataSandiPengguna, setKataSandiPengguna, simpanLapak } from '../../lib/db';
+import { normalisasiWa } from '../../data/site';
+import { cekCsrf, teksForm } from '../../lib/forms';
+import { waValid } from '../../data/site';
+
+const pengguna = Astro.locals.pengguna!;
+const sesi = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const csrf = sesi?.csrf ?? '';
+const lapak = ambilLapak(pengguna.id);
+
+let galat: string | null = null;
+let ok: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  if (!cekCsrf(fd, sesi)) {
+    return Astro.redirect('/akun/toko?notif=salahfasilitas');
+  }
+  const aksi = teksForm(fd, 'aksi');
+  if (aksi === 'toko') {
+    const nama = teksForm(fd, 'nama');
+    const whatsapp = normalisasiWa(teksForm(fd, 'whatsapp'));
+    const deskripsi = teksForm(fd, 'deskripsi');
+    const lokasi = teksForm(fd, 'lokasi');
+    if (!nama) {
+      galat = 'Nama toko wajib diisi.';
+    } else if (whatsapp && !waValid(whatsapp)) {
+      galat = 'Nomor WhatsApp tidak valid.';
+    } else {
+      try {
+        simpanLapak(pengguna.id, { nama, whatsapp, deskripsi, lokasi });
+        ok = 'Pengaturan toko disimpan.';
+      } catch (err) {
+        galat = err instanceof Error ? err.message : 'Gagal menyimpan.';
+      }
+    }
+  } else if (aksi === 'sandi') {
+    const sekarang = teksForm(fd, 'kataSandi');
+    const baru = teksForm(fd, 'kataSandiBaru');
+    const ulangi = teksForm(fd, 'kataSandiBaru2');
+    if (!cekKataSandiPengguna(pengguna.email, sekarang)) {
+      galat = 'Kata sandi saat ini salah.';
+    } else if (baru.length < 8) {
+      galat = 'Kata sandi baru minimal 8 karakter.';
+    } else if (baru !== ulangi) {
+      galat = 'Ulangi kata sandi tidak sama.';
+    } else {
+      setKataSandiPengguna(pengguna.id, baru);
+      ok = 'Kata sandi berhasil diganti.';
+    }
+  }
+}
+
+const notif = galat
+  ? { jenis: 'err' as const, teks: galat }
+  : ok
+    ? { jenis: 'ok' as const, teks: ok }
+    : null;
+---
+
+<AkunLayout title="Setelan toko" pengguna={pengguna} notif={notif} kembali={{ href: '/akun', label: 'Produk saya' }}>
+  <header class="mb-6">
+    <h1 class="text-xl font-bold tracking-tight text-stone-900">Setelan toko</h1>
+    <p class="mt-1 text-sm text-stone-600">Nama, WhatsApp, dan deskripsi lapakmu tampil di halaman publik.</p>
+  </header>
+
+  <form method="post" action="/akun/toko" class="mb-8 flex flex-col gap-4 rounded-md border border-garis p-5">
+    <input type="hidden" name="csrf" value={csrf} />
+    <input type="hidden" name="aksi" value="toko" />
+    <h2 class="text-sm font-bold text-stone-900">Identitas lapak</h2>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Nama toko</span>
+      <input
+        name="nama"
+        required
+        maxlength="80"
+        value={lapak?.nama ?? pengguna.nama}
+        class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+      />
+    </label>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">WhatsApp</span>
+      <input
+        name="whatsapp"
+        inputmode="numeric"
+        placeholder="0812 3456 7890"
+        value={lapak?.whatsapp ?? ''}
+        class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+      />
+      <span class="text-xs text-stone-600">Kosongkan kalau tidak ingin menampilkan tombol WA di produkmu.</span>
+    </label>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Lokasi</span>
+      <input
+        name="lokasi"
+        maxlength="120"
+        placeholder="Jakarta"
+        value={lapak?.lokasi ?? ''}
+        class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+      />
+    </label>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Deskripsi lapak</span>
+      <textarea name="deskripsi" rows="4" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none">{lapak?.deskripsi ?? ''}</textarea>
+    </label>
+    <div>
+      <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">
+        Simpan pengaturan
+      </button>
+    </div>
+  </form>
+
+  <form method="post" action="/akun/toko" class="flex flex-col gap-4 rounded-md border border-garis p-5">
+    <input type="hidden" name="csrf" value={csrf} />
+    <input type="hidden" name="aksi" value="sandi" />
+    <h2 class="text-sm font-bold text-stone-900">Ganti kata sandi</h2>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Kata sandi saat ini</span>
+      <input type="password" name="kataSandi" required autocomplete="current-password" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
+    </label>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Kata sandi baru</span>
+      <input type="password" name="kataSandiBaru" required minlength="8" autocomplete="new-password" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
+      <span class="text-xs text-stone-600">Minimal 8 karakter.</span>
+    </label>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-stone-900">Ulangi kata sandi baru</span>
+      <input type="password" name="kataSandiBaru2" required minlength="8" autocomplete="new-password" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
+    </label>
+    <div>
+      <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">
+        Ganti kata sandi
+      </button>
+    </div>
+  </form>
+</AkunLayout>

@@ -1,8 +1,15 @@
 ---
 import { ambilSite } from '../lib/db';
 import { inisial } from '../data/site';
+import Kembali from './Kembali.astro';
+
+interface Props {
+  /** Halaman tujuan tombol kembali. Null di Beranda, karena tidak ada halaman sebelumnya. */
+  kembali?: { href: string; label: string } | null;
+}
 
 const site = ambilSite();
+const kembali = Astro.props.kembali ?? null;
 
 const NAV = [
   { label: 'Beranda', href: '/' },
@@ -10,15 +17,23 @@ const NAV = [
 ] as const;
 ---
 
-<header class="border-b border-garis bg-dasar">
-  <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-    <a href="/" class="target-sentuh flex items-center gap-2" aria-label="Beranda">
-      <span class="flex size-9 items-center justify-center rounded-md bg-stone-900 font-sans text-sm font-bold text-white">
-        {inisial(site.nama)}
-      </span>
-      <span class="text-base font-bold tracking-tight text-stone-900">{site.nama}</span>
-    </a>
-    <nav class="flex items-center gap-1" aria-label="Navigasi utama">
+<header class="header-tetap border-b border-garis bg-dasar">
+  <div class="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 sm:px-6">
+    {
+      kembali ? (
+        <Kembali href={kembali.href} label={kembali.label} />
+      ) : (
+        <a href="/" class="target-sentuh flex min-w-0 items-center gap-2" aria-label="Beranda">
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-sm font-bold text-white">
+            {inisial(site.nama)}
+          </span>
+          <span class="truncate text-base font-bold tracking-tight text-stone-900">{site.nama}</span>
+        </a>
+      )
+    }
+    {/* Di mobile(linkan ini) tujuan utamanya pindah ke bar bawah, jadi nav atas disembunyikan.
+        Kalau tidak, logo + dua link sudah melebihi lebar 360px. */}
+    <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
       {
         NAV.map((item) => (
           <a
@@ -32,3 +47,4 @@ const NAV = [
     </nav>
   </div>
 </header>
+

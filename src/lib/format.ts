@@ -21,3 +21,17 @@ export function rupiahRingkas(nilai: number): string {
   }
   return `Rp${Math.round(nilai / 1000)} rb`;
 }
+/** Angka polos jadi "angka satuan" ("8" -> "8 GB"). Isi yang sudah bersatuan dibiarkan. */
+export function satuan(nilai: string, unit: string): string {
+  return /^\d+([.,]\d+)?$/.test(nilai) ? `${nilai} ${unit}` : nilai;
+}
+
+/** Huruf pertama kapital ("pixel" -> "Pixel"). */
+export function kapital(nilai: string): string {
+  return nilai ? nilai.charAt(0).toUpperCase() + nilai.slice(1) : nilai;
+}
+
+/** Nama view-transition per unit (foto kartu ↔ foto detail). Hanya huruf/angka/strip. */
+export function namaVt(slug: string): string {
+  return `foto-${slug.replace(/[^a-z0-9-]/gi, '')}`;
+}

@@ -1,13 +1,17 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import {
-  listUnits,
+  listSemuaUnits,
+  listAntrean,
+  jumlahAntrean,
   getUnit,
   deleteUnit,
   setTersedia,
   labelKondisi,
+  LABEL_MODERASI,
   hargaTercoret,
   ambilSite,
+  hitungKlik,
 } from '../../lib/db';
 import { rupiah } from '../../lib/format';
 import { fotoSrc, hapusFoto } from '../../lib/foto';
@@ -41,7 +45,17 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-const semua = listUnits();
+const semua = listSemuaUnits();
+// Nama penjual untuk semua unit milik seller, diambil lewat join per status
+// supaya daftar ini tidak melakukan satu query per unit.
+const penjual = new Map(
+  [...listAntrean('menunggu'), ...listAntrean('tayang'), ...listAntrean('tolak')].map((u) => [
+    u.slug,
+    u,
+  ]),
+);
+const jmlAntrean = jumlahAntrean().menunggu;
+const klik = hitungKlik(30);
 const mintaHapus = Astro.url.searchParams.get('hapus');
 const unitHapus = mintaHapus ? getUnit(mintaHapus) : null;
 const infoNotif = notif ? NOTIF[notif] ?? null : null;
@@ -62,6 +76,21 @@ const waSiap = waValid(ambilSite().whatsapp);
           Isi sekarang
         </a>
       </div>
+    )
+  }
+
+  {
+    jmlAntrean > 0 && (
+      <a
+        href="/admin/moderasi"
+        class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-700 bg-dasar px-4 py-3 hover:bg-amber-50"
+      >
+        <p class="text-sm text-stone-700">
+          <span class="font-semibold text-stone-900">{jmlAntrean} produk seller</span> menunggu review
+          sebelum tayang.
+        </p>
+        <span class="text-sm font-semibold text-aksi-teks">Buka moderasi</span>
+      </a>
     )
   }
 
@@ -144,8 +173,19 @@ const waSiap = waValid(ambilSite().whatsapp);
                     <p class="text-xs text-stone-600">
                       {labelKondisi(unit.kondisi)} · {rupiah(unit.harga)}
                       {coret ? ` (coret ${rupiah(coret)})` : ''}
+                      {klik[unit.slug] ? ` · ${klik[unit.slug]} klik WA (30 hari)` : ''}
                     </p>
+                    {penjual.get(unit.slug) && (
+                      <p class="mt-0.5 text-xs text-stone-600">
+                        Penjual: <span class="font-medium text-stone-900">{penjual.get(unit.slug)?.sellerNama}</span>
+                      </p>
+                    )}
                   </div>
+                  {unit.pemilikId !== null && (
+                    <span class="rounded-md border border-garis bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-600">
+                      {LABEL_MODERASI[unit.moderasi]}
+                    </span>
+                  )}
                   <span class={`text-xs font-semibold ${unit.tersedia ? 'text-aksi-teks' : 'text-stone-500'}`}>
                     {unit.tersedia ? 'Tersedia' : 'Terjual'}
                   </span>

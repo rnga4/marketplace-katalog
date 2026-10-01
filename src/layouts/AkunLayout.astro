@@ -2,22 +2,23 @@
 import '@fontsource-variable/plus-jakarta-sans';
 import '../styles/global.css';
 
-import { bacaSesi } from '../lib/auth';
-import { jumlahAntrean } from '../lib/db';
+import { bacaSesi, COOKIE_AKUN } from '../lib/auth';
+import { ambilLapak, type Pengguna } from '../lib/db';
 import Kembali from '../components/Kembali.astro';
 
 interface Props {
   title: string;
+  pengguna: Pengguna;
   notif?: { jenis: 'ok' | 'err'; teks: string } | null;
-  /** Daftar unit adalah akar admin, jadi halaman itu tidak punya tombol kembali. */
   kembali?: { href: string; label: string } | null;
 }
 
-const { title } = Astro.props;
-const notif = Astro.props.notif ?? null;
-const kembali = Astro.props.kembali ?? null;
-const sesi = bacaSesi(Astro.cookies);
-const totalAntrean = jumlahAntrean().menunggu;
+const { title, pengguna, notif = null, kembali = null } = Astro.props;
+const sesi = Astro.locals.pengguna ?? pengguna;
+const lapak = ambilLapak(sesi.id);
+const sesiAkun = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const csrf = sesiAkun?.csrf ?? '';
+const aktif = Astro.url.pathname.replace(/\/$/, '') || '/akun';
 ---
 
 <!doctype html>
@@ -26,66 +27,48 @@ const totalAntrean = jumlahAntrean().menunggu;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>{title} · Admin</title>
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>{title} · Toko saya</title>
+    <link rel="icon" type="image/png+xml" href="/favicon.png" />
   </head>
-  <body>
+  <body class="bg-dasar font-sans text-stone-900 antialiased">
     <header class="border-b border-garis bg-dasar">
       <div class="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between md:gap-3">
         {
           kembali ? (
             <Kembali href={kembali.href} label={kembali.label} />
           ) : (
-            <a href="/admin" class="target-sentuh flex min-w-0 items-center gap-2 self-start">
+            <a href="/akun" class="target-sentuh flex min-w-0 items-center gap-2 self-start">
               <span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
-                HP
+                {sesi.nama.slice(0, 2).toUpperCase()}
               </span>
-              <span class="truncate text-sm font-bold tracking-tight text-stone-900">Admin katalog</span>
+              <span class="truncate text-sm font-bold tracking-tight text-stone-900">{lapak?.nama ?? 'Toko saya'}</span>
             </a>
           )
         }
-        <nav class="flex flex-wrap items-center gap-1 md:ml-auto" aria-label="Navigasi admin">
+        <nav class="flex flex-wrap items-center gap-1 md:ml-auto" aria-label="Navigasi toko">
           <a
-            href="/"
-            target="_blank"
-            rel="noopener"
+            href="/akun"
+            aria-current={aktif === '/akun' ? 'page' : 'false'}
             class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
           >
-            Lihat katalog publik
+            Produk saya
           </a>
           <a
-            href="/admin/moderasi"
-            class="target-sentuh inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
-          >
-            Moderasi
-            {
-              totalAntrean > 0 && (
-                <span class="rounded-md bg-amber-100 px-1.5 text-xs font-semibold text-amber-900">
-                  {totalAntrean}
-                </span>
-              )
-            }
-          </a>
-          <a
-            href="/admin/tambah"
+            href="/akun/tambah"
+            aria-current={aktif === '/akun/tambah' ? 'page' : 'false'}
             class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
           >
-            Tambah unit
+            Tambah produk
           </a>
           <a
-            href="/admin/pengaturan"
+            href="/akun/toko"
+            aria-current={aktif === '/akun/toko' ? 'page' : 'false'}
             class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
           >
-            Identitas toko
+            Setelan toko
           </a>
-          <a
-            href="/admin/ubah-sandi"
-            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
-          >
-            Ubah kata sandi
-          </a>
-          <form method="post" action="/admin/logout">
-            <input type="hidden" name="csrf" value={sesi?.csrf ?? ''} />
+          <form method="post" action="/akun/keluar">
+            <input type="hidden" name="csrf" value={csrf} />
             <button
               type="submit"
               class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-semibold text-stone-900 hover:bg-stone-100 hover:text-red-800"
@@ -118,7 +101,5 @@ const totalAntrean = jumlahAntrean().menunggu;
 </html>
 
 <script>
-  /* Setelah aksi (ada pesan di atas) pembacaan dimulai dari pesannya.
-     Saat konfirmasi hapus, biarkan halaman yang mengatur posisi gulirnya sendiri. */
   if (document.querySelector('[role="status"]')) window.scrollTo(0, 0);
 </script>

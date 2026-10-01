@@ -1,0 +1,51 @@
+---
+import AkunLayout from '../../layouts/AkunLayout.astro';
+import UnitForm from '../../components/admin/UnitForm.astro';
+import { getUnit, createUnit } from '../../lib/db';
+import { bacaSesi, COOKIE_AKUN } from '../../lib/auth';
+import { cekCsrf } from '../../lib/forms';
+import { unitDariForm, slugDariForm, prosesFotoUpload, saringFoto } from '../../lib/formUnit';
+
+const pengguna = Astro.locals.pengguna!;
+const sesi = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const csrf = sesi?.csrf ?? '';
+
+let galat: string | null = null;
+let nilaiForm: Partial<import('../../lib/db').UnitHp> | undefined = undefined;
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  if (!cekCsrf(fd, sesi)) {
+    return Astro.redirect('/akun?notif=salahfasilitas');
+  }
+  const unit = unitDariForm(fd);
+  nilaiForm = unit;
+  const slug = await slugDariForm(fd, unit.nama, (s) => !!getUnit(s));
+  if (!unit.harga || unit.harga <= 0) {
+    galat = 'Harga wajib diisi dan lebih dari 0.';
+  } else if (!slug) {
+    galat = 'Slug tidak valid atau sudah dipakai unit lain. Ubah nama atau isi slug manual.';
+  } else {
+    try {
+      // Nama file dari textarea tidak dipercaya: hanya foto yang diunggah untuk
+      // slug ini yang boleh dipakai, jadi tidak ada cara memuat foto unit lain.
+      unit.foto = saringFoto(await prosesFotoUpload(fd, slug, unit.foto ?? []), slug);
+      createUnit(slug, { ...unit, pemilikId: pengguna.id });
+      return Astro.redirect('/akun?notif=tersimpan');
+    } catch (err) {
+      galat = err instanceof Error ? err.message : 'Gagal memproses foto atau menyimpan unit.';
+    }
+  }
+}
+---
+
+<AkunLayout title="Tambah produk" pengguna={pengguna} notif={galat ? { jenis: 'err', teks: galat } : null} kembali={{ href: '/akun', label: 'Produk saya' }}>
+  <header class="mb-6">
+    <h1 class="text-xl font-bold tracking-tight text-stone-900">Tambah produk</h1>
+    <p class="mt-1 text-sm text-stone-600">
+      Produk dikirim ke antrean peninjauan dulu. Baru tayang setelah disetujui admin.
+    </p>
+  </header>
+
+  <UnitForm csrf={csrf} action="/akun/tambah" tombolLabel="Kirim untuk ditinjau" nilai={nilaiForm} />
+</AkunLayout>

@@ -4,7 +4,7 @@ import { linkWa } from '../data/site';
 import { bacaSesi } from '../lib/auth';
 
 const site = ambilSite();
-const wa = linkWa(undefined, site);
+const wa = linkWa(undefined, site.whatsapp, site.nama);
 const pemilik = bacaSesi(Astro.cookies) !== null;
 ---
 

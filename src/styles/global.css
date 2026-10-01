@@ -56,8 +56,71 @@ textarea:focus-visible {
   min-height: 2.75rem;
 }
 
+/* Bar bawah hanya muncul di bawah 768px, jadi ruang konten yang dipesan juga
+   hanya di lebar itu. Tingginya dipakai dua kali supaya tinggi bar dan ruang
+   yang dipesan tidak pernah berbeda, dan safe-area perangkat tetap dihormati
+   tanpa membakar tinggi tambahan di perangkat yang tidak punya. */
+:root {
+  --tinggi-nav-bawah: 3.75rem;
+}
+
+.nav-bawah {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  height: calc(var(--tinggi-nav-bawah) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid var(--color-garis);
+  background-color: var(--color-dasar);
+}
+
+.nav-bawah ul {
+  height: var(--tinggi-nav-bawah);
+}
+
+/* Tab aktif ditandai warna dan tebal, bukan titik atau badge: penanda posisi
+   ini bukan informasi baru, jadi tidak perlu bentuk tambahan. */
+.nav-bawah a[aria-current="page"] {
+  color: var(--color-aksi-teks);
+  font-weight: 600;
+}
+
+/* Tanpa ini, footer dan unit terakhir tertutup bar, karena bar-nya fixed. */
+@media (width < 48rem) {
+  .halaman-publik {
+    padding-bottom: calc(var(--tinggi-nav-bawah) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* Pemerataan teks panjang supaya rapi di kolom sempit. */
 .prosa {
   line-height: 1.65;
   text-wrap: pretty;
+}
+/* Spinner tombol saat form dikirim (admin) */
+@keyframes putar {
+  to { transform: rotate(1turn); }
+}
+button[aria-busy="true"]::before {
+  content: "";
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 9999px;
+  animation: putar 0.7s linear infinite;
+}
+
+/* Umpan balik tekan untuk tombol dan tautan (bukan input) */
+@media (prefers-reduced-motion: no-preference) {
+  a.target-sentuh,
+  button.target-sentuh {
+    transition: transform 80ms ease-out;
+  }
+  a.target-sentuh:active,
+  button.target-sentuh:active {
+    transform: scale(0.97);
+  }
 }

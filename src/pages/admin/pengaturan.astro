@@ -45,6 +45,7 @@ const bantuan = 'text-xs text-stone-600';
 
 <AdminLayout
   title="Identitas toko"
+  kembali={{ href: '/admin', label: 'Unit katalog' }}
   notif={galat
     ? { jenis: 'err', teks: galat }
     : Astro.url.searchParams.has('notif')

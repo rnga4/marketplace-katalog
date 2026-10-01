@@ -1,0 +1,119 @@
+---
+import AkunLayout from '../../layouts/AkunLayout.astro';
+import { listUnitsPemilik, ambilLapak, LABEL_MODERASI, hargaTercoret, type Moderasi } from '../../lib/db';
+import { fotoSrc } from '../../lib/foto';
+import { rupiah } from '../../lib/format';
+import { bacaSesi, COOKIE_AKUN } from '../../lib/auth';
+
+const pengguna = Astro.locals.pengguna!;
+const sesiAkun = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const semua = listUnitsPemilik(pengguna.id);
+const lapak = ambilLapak(pengguna.id);
+
+const notifMap: Record<string, { jenis: 'ok' | 'err'; teks: string }> = {
+  tersimpan: { jenis: 'ok', teks: 'Produk dikirim untuk ditinjau.' },
+  diubah: { jenis: 'ok', teks: 'Perubahan produk dikirim untuk ditinjau lagi.' },
+  terhapus: { jenis: 'ok', teks: 'Produk dihapus dari toko kamu.' },
+  salahfasilitas: { jenis: 'err', teks: 'Permintaan ditolak (token sesi tidak cocok).' },
+};
+const notif = notifMap[Astro.url.searchParams.get('notif') ?? ''] ?? null;
+
+const menunggu = semua.filter((u) => u.moderasi === 'menunggu').length;
+const tayang = semua.filter((u) => u.moderasi === 'tayang').length;
+const ditolak = semua.filter((u) => u.moderasi === 'tolak').length;
+
+function warna(m: Moderasi): string {
+  if (m === 'tayang') return 'border-emerald-700 bg-emerald-50 text-emerald-900';
+  if (m === 'tolak') return 'border-red-700 bg-red-50 text-red-900';
+  return 'border-amber-700 bg-amber-50 text-amber-900';
+}
+---
+
+<AkunLayout title="Produk saya" pengguna={pengguna} notif={notif}>
+  <header class="mb-6">
+    <h1 class="text-xl font-bold tracking-tight text-stone-900">Produk saya</h1>
+    <p class="mt-1 text-sm text-stone-600">
+      Produk baru masuk antrean peninjauan sebelum muncul di katalog. {
+        lapak && <a href={`/lapak/${lapak.slug}`} class="font-medium text-aksi-teks underline">Lihat lapak publik</a>
+      }
+    </p>
+  </header>
+
+  {
+    semua.length > 0 && (
+      <dl class="mb-6 grid grid-cols-3 gap-2">
+        <div class="rounded-md border border-garis px-3 py-2">
+          <dt class="text-xs text-stone-600">Tayang</dt>
+          <dd class="text-lg font-bold text-stone-900">{tayang}</dd>
+        </div>
+        <div class="rounded-md border border-garis px-3 py-2">
+          <dt class="text-xs text-stone-600">Menunggu</dt>
+          <dd class="text-lg font-bold text-stone-900">{menunggu}</dd>
+        </div>
+        <div class="rounded-md border border-garis px-3 py-2">
+          <dt class="text-xs text-stone-600">Ditolak</dt>
+          <dd class="text-lg font-bold text-stone-900">{ditolak}</dd>
+        </div>
+      </dl>
+    )
+  }
+
+  <p class="mb-4">
+    <a href="/akun/tambah" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">
+      Tambah produk
+    </a>
+  </p>
+
+  {
+    semua.length === 0 ? (
+      <div class="rounded-md border border-dashed border-garis px-4 py-10 text-center">
+        <p class="text-sm font-medium text-stone-900">Belum ada produk</p>
+        <p class="mt-1 text-sm text-stone-600">Tambahkan unit HP yang ingin kamu jual. Setelah dikirim, produknya ditinjau dulu sebelum tayang.</p>
+      </div>
+    ) : (
+      <ul class="flex flex-col gap-3">
+        {semua.map((u) => {
+          const coret = hargaTercoret(u);
+          return (
+            <li class="flex gap-3 rounded-md border border-garis p-3">
+              <img
+                src={u.foto[0] ? fotoSrc(u.foto[0], 'thumb') : '/favicon.png'}
+                alt=""
+                width={80}
+                height={80}
+                loading="lazy"
+                class="size-20 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
+              />
+              <div class="flex min-w-0 flex-1 flex-col gap-1">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-stone-900">{u.nama}</p>
+                    <p class="text-xs text-stone-600">{rupiah(u.harga)}{coret && <span class="ml-1 line-through">{rupiah(coret)}</span>}</p>
+                  </div>
+                  <span class={`shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium ${warna(u.moderasi)}`}>
+                    {LABEL_MODERASI[u.moderasi]}
+                  </span>
+                </div>
+                {u.moderasi === 'tolak' && u.alasanModerasi && (
+                  <p class="text-xs text-red-800">Alasan ditolak: {u.alasanModerasi}</p>
+                )}
+                <div class="mt-1 flex flex-wrap items-center gap-3 text-xs">
+                  <a href={`/akun/edit/${u.slug}`} class="target-sentuh font-medium text-aksi-teks underline">Ubah</a>
+                  {u.moderasi === 'tayang' && (
+                    <a href={`/hp/${u.slug}`} class="target-suchen font-medium text-stone-600 underline">Lihat halaman</a>
+                  )}
+                  <form method="post" action="/akun/hapus">
+                    <input type="hidden" name="csrf" value={sesiAkun?.csrf ?? ""} />
+                    
+                    <input type="hidden" name="slug" value={u.slug} />
+                    <button type="submit" class="target-sentuh font-medium text-red-800 underline">Hapus</button>
+                  </form>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+</AkunLayout>

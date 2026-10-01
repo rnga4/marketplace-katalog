@@ -1,14 +1,19 @@
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
-import { ambilSessionSecret } from './db';
+import { ambilSessionSecret, type Peran } from './db';
 
 /**
- * Sesi admin tanpa server sesi terpisah: token berisi {csrf, kedaluwarsa}
- * yang ditandatangani HMAC-SHA256 pakai SESSION_SECRET.
+ * Sesi tanpa server sesi terpisah: token berisi identitas, peran, dan
+ * {csrf, kedaluwarsa} yang ditandatangani HMAC-SHA256 pakai SESSION_SECRET.
  * Cookie httpOnly + SameSite=Lax dipasang di sisi halaman.
+ *
+ * Ada dua cookie karena satu browser bisa jadi admin sekaligus seller.
+ * Yang menentukan boleh atau tidak bukan cookie-nya, tapi peran di dalam
+ * token, sehingga cookie seller tidak akan pernah diterima sebagai admin.
  */
 
 const HARI = 24 * 60 * 60 * 1000;
 export const COOKIE_ADMIN = 'hp_admin';
+export const COOKIE_AKUN = 'hp_akun';
 export const LAMA_SESI = 7 * HARI;
 
 function tanda(data: string): string {
@@ -23,13 +28,22 @@ export function buatCsrf(): string {
   return randomBytes(16).toString('hex');
 }
 
-export function buatToken(csrf: string, ttlMs: number = LAMA_SESI): string {
-  const payload = `${csrf}.${Date.now() + ttlMs}`;
-  return `${Buffer.from(payload).toString('base64url')}.${tanda(payload)}`;
+export interface Sesi {
+  /** null hanya untuk token admin lama, dibuat sebelum id masuk ke token. */
+  penggunaId: number | null;
+  peran: Peran;
+  csrf: string;
 }
 
-export interface Sesi {
-  csrf: string;
+/** Token seller dan admin sama bentuknya; peran ikut di dalamnya. */
+export function buatToken(
+  penggunaId: number,
+  peran: Peran,
+  csrf: string,
+  ttlMs: number = LAMA_SESI,
+): string {
+  const payload = `${penggunaId}.${peran}.${csrf}.${Date.now() + ttlMs}`;
+  return `${Buffer.from(payload).toString('base64url')}.${tanda(payload)}`;
 }
 
 export function cekToken(token: string | undefined): Sesi | null {
@@ -42,19 +56,46 @@ export function cekToken(token: string | undefined): Sesi | null {
   } catch {
     return null;
   }
-  const [csrf, expStr] = payload.split('.');
-  const exp = Number(expStr);
-  if (!csrf || !Number.isFinite(exp) || exp < Date.now()) return null;
   const uji = Buffer.from(sig);
   const harapan = Buffer.from(tanda(payload));
   if (uji.length !== harapan.length || !timingSafeEqual(uji, harapan)) return null;
-  return { csrf };
+
+  const bagian = payload.split('.');
+
+  // Token lama hanya berisi csrf + kedaluwarsa, tanpa identitas. Perlakukan
+  // sebagai admin supaya sesi yang sedang dipakai tidak terlempar keluar saat
+  // aplikasi diperbarui.
+  if (bagian.length === 2) {
+    const [csrf, expStr] = bagian;
+    const exp = Number(expStr);
+    if (!csrf || !Number.isFinite(exp) || exp < Date.now()) return null;
+    return { penggunaId: null, peran: 'admin', csrf };
+  }
+
+  if (bagian.length !== 4) return null;
+  const [idStr, peranStr, csrf, expStr] = bagian;
+  const penggunaId = Number(idStr);
+  const exp = Number(expStr);
+  if (!Number.isInteger(penggunaId) || penggunaId <= 0) return null;
+  if (peranStr !== 'admin' && peranStr !== 'seller') return null;
+  if (!csrf || !Number.isFinite(exp) || exp < Date.now()) return null;
+  return { penggunaId, peran: peranStr, csrf };
 }
 
-/** Ambil sesi dari objek cookies Astro (Astro.cookies). */
-export function bacaSesi(cookies: {
+export interface PembacaCookie {
   get(name: string): { value: string | undefined } | undefined;
-}): Sesi | null {
-  const token = cookies.get(COOKIE_ADMIN)?.value;
-  return cekToken(token);
+}
+
+/**
+ * Ambil sesi dari objek cookies Astro (Astro.cookies). Peran yang diminta
+ * dicek di sini, jadi satu token tidak bisa dipakai di area lain.
+ */
+export function bacaSesi(
+  cookies: PembacaCookie,
+  cookie: string = COOKIE_ADMIN,
+  peranDiminta: Peran = 'admin',
+): Sesi | null {
+  const sesi = cekToken(cookies.get(cookie)?.value);
+  if (!sesi) return null;
+  return sesi.peran === peranDiminta ? sesi : null;
 }

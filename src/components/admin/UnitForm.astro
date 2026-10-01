@@ -17,7 +17,7 @@ const textareaList = (arr?: string[]) => (arr && arr.length ? arr.join('\n') : '
 const fotoTerpilih = nilai.foto ?? [];
 ---
 
-<form method="post" action={action} enctype="multipart/form-data" class="flex flex-col gap-6">
+<form method="post" action={action} enctype="multipart/form-data" data-simpan="Menyimpan…" class="flex flex-col gap-6">
   <input type="hidden" name="csrf" value={csrf} />
 
   <fieldset class="flex flex-col gap-3">
@@ -97,11 +97,16 @@ const fotoTerpilih = nilai.foto ?? [];
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5">
         <span class="text-sm font-medium text-stone-900">Layar</span>
-        <input name="layar" value={nilai.layar ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+        <input name="layar" placeholder="6.4 inci AMOLED 90 Hz" value={nilai.layar ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
       </label>
       <label class="flex flex-col gap-1.5">
         <span class="text-sm font-medium text-stone-900">Baterai</span>
-        <input name="baterai" value={nilai.baterai ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+        <input name="baterai" placeholder="4355 mAh, health 92%" value={nilai.baterai ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1.5 sm:col-span-2">
+        <span class="text-sm font-medium text-stone-900">IMEI</span>
+        <input name="imei" inputmode="numeric" placeholder="15 digit, pisahkan dengan / kalau dual IMEI" value={nilai.imei ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+        <span class="text-xs text-stone-600">Tampil di spesifikasi. Kosongkan kalau tidak mau dipajang.</span>
       </label>
     </div>
   </fieldset>
@@ -159,3 +164,17 @@ Kabel USB-C" class="target-sentuh rounded-md border border-stone-300 bg-dasar px
     </a>
   </div>
 </form>
+<script>
+  for (const form of document.querySelectorAll<HTMLFormElement>('form[data-simpan]')) {
+    form.addEventListener('submit', () => {
+      const tombol = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (!tombol) return;
+      tombol.textContent = form.dataset.simpan ?? 'Menyimpan…';
+      tombol.setAttribute('aria-busy', 'true');
+      setTimeout(() => (tombol.disabled = true), 0);
+    });
+  }
+  addEventListener('pageshow', (e) => {
+    if (e.persisted) location.reload();
+  });
+</script>

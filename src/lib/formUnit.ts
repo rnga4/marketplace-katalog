@@ -21,6 +21,7 @@ export function unitDariForm(fd: FormData): UnitInput {
     tahunRilis: angkaAtauNull(fd, 'tahunRilis'),
     layar: teksForm(fd, 'layar'),
     baterai: teksForm(fd, 'baterai'),
+    imei: teksForm(fd, 'imei').replace(/[^0-9\s/,]/g, ''),
     deskripsi: teksForm(fd, 'deskripsi'),
     kelengkapan: daftarForm(fd, 'kelengkapan'),
     catatan: daftarForm(fd, 'catatan'),
@@ -47,4 +48,14 @@ export async function prosesFotoUpload(fd: FormData, slug: string, daftar: strin
     }
   }
   return hasil;
+}
+
+/**
+ * Nama foto yang boleh dipakai sebuah unit. Foto yang diunggah untuk unit itu
+ * selalu diawali slug-nya, jadi nama lain yang diketik manual bisa berarti file
+ * milik seller atau unit lain. Tanpa saringan ini, satu seller bisa menaruh
+ * foto penjual lain di produknya hanya dengan mengetik nama file-nya.
+ */
+export function saringFoto(nama: string[], slug: string): string[] {
+  return nama.filter((n) => n === slug || n.startsWith(`${slug}-`));
 }

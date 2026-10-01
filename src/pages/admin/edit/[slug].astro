@@ -41,11 +41,19 @@ if (!unit) {
 ---
 
 {!unit ? (
-  <AdminLayout title="Unit tidak ditemukan" notif={null}>
-    <NotFoundView />
+  <AdminLayout
+    title="Unit tidak ditemukan"
+    notif={null}
+    kembali={{ href: '/admin', label: 'Unit katalog' }}
+  >
+    <NotFoundView judul="Unit ini tidak ada." teks="Mungkin sudah dihapus dari katalog." />
   </AdminLayout>
 ) : (
-  <AdminLayout title={`Edit ${unit.nama}`} notif={galat ? { jenis: 'err', teks: galat } : null}>
+  <AdminLayout
+    title={`Edit ${unit.nama}`}
+    notif={galat ? { jenis: 'err', teks: galat } : null}
+    kembali={{ href: '/admin', label: 'Unit katalog' }}
+  >
     <header class="mb-6">
       <h1 class="text-xl font-bold tracking-tight text-stone-900">Edit {unit.nama}</h1>
       <p class="text-sm text-stone-600">Perubahan langsung tercermin di halaman publik.</p>

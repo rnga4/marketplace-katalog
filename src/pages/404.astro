@@ -5,6 +5,6 @@ import NotFoundView from '../components/NotFoundView.astro';
 Astro.response.status = 404;
 ---
 
-<BaseLayout title="Halaman tidak ditemukan">
+<BaseLayout title="Halaman tidak ditemukan" kembali={{ href: '/', label: 'Beranda' }}>
   <NotFoundView />
 </BaseLayout>

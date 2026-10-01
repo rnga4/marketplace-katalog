@@ -53,4 +53,8 @@ export const NOTIF: Record<string, { jenis: 'ok' | 'err'; teks: string }> = {
   statusubah: { jenis: 'ok', teks: 'Status tersedia unit diperbarui.' },
   sandiubah: { jenis: 'ok', teks: 'Kata sandi berhasil diganti.' },
   salahfasilitas: { jenis: 'err', teks: 'Permintaan ditolak (token sesi tidak cocok).' },
+  diterima: { jenis: 'ok', teks: 'Produk diterima dan sekarang tayang di katalog.' },
+  'diterima lagi': { jenis: 'ok', teks: 'Produk diterima lagi dan sekarang tayang.' },
+  ditolak: { jenis: 'ok', teks: 'Produk ditolak. Seller bisa melihat alasannya di akunnya.' },
+  kirim: { jenis: 'ok', teks: 'Produk terkirim. Tunggu ditinjau admin sebelum tayang.' },
 };

@@ -1,15 +1,16 @@
 ---
 import type { UnitHp } from '../lib/db';
 import { hargaTercoret } from '../lib/db';
-import { rupiah, gabung } from '../lib/format';
+import { rupiah, gabung, namaVt } from '../lib/format';
 import { fotoSrc } from '../lib/foto';
 import KondisiBadge from './KondisiBadge.astro';
 
 interface Props {
   unit: UnitHp;
+  urut?: number;
 }
 
-const { unit } = Astro.props;
+const { unit, urut = 0 } = Astro.props;
 const coret = hargaTercoret(unit);
 const fotoUtama = unit.foto[0] ?? null;
 const ringkas = gabung([unit.kapasitas, unit.ram]);
@@ -17,15 +18,17 @@ const ringkas = gabung([unit.kapasitas, unit.ram]);
 
 <a
   href={`/hp/${unit.slug}`}
-  class="group flex flex-col border-r border-b border-garis hover:bg-stone-100"
+  class="kartu-masuk group flex flex-col border-r border-b border-garis hover:bg-stone-100"
+  style={`--i:${Math.min(urut, 8)}`}
   aria-label={`Lihat ${unit.nama}, ${rupiah(unit.harga)}`}
 >
-  <div class="aspect-[4/5] overflow-hidden bg-stone-100">
+  <div class="aspect-[4/5] overflow-hidden bg-stone-100" style={`view-transition-name:${namaVt(unit.slug)}`}>
     {
       fotoUtama && (
         <img
           src={fotoSrc(fotoUtama, 'thumb')}
           alt={`Foto ${unit.nama}: ${unit.warna}`}
+          data-fade
           loading="lazy"
           decoding="async"
           width="400"

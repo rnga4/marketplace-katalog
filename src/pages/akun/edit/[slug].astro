@@ -1,0 +1,67 @@
+---
+import AkunLayout from '../../../layouts/AkunLayout.astro';
+import UnitForm from '../../../components/admin/UnitForm.astro';
+import { getUnit, updateUnit, type UnitHp } from '../../../lib/db';
+import { bacaSesi, COOKIE_AKUN } from '../../../lib/auth';
+import { cekCsrf } from '../../../lib/forms';
+import { unitDariForm, prosesFotoUpload, saringFoto } from '../../../lib/formUnit';
+
+const pengguna = Astro.locals.pengguna!;
+const sesi = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const csrf = sesi?.csrf ?? '';
+
+const slug = Astro.params.slug ?? '';
+const unit = getUnit(slug);
+
+// Unit milik orang lain atau milik admin tidak boleh dibuka lewat URL ini.
+if (!unit || unit.pemilikId !== pengguna.id) {
+  return Astro.redirect('/akun');
+}
+
+const bisaUbah = unit.moderasi !== 'menunggu';
+
+let galat: string | null = null;
+let nilaiForm: Partial<UnitHp> | undefined = unit;
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  if (!cekCsrf(fd, sesi)) {
+    return Astro.redirect('/akun?notif=salahfasilitas');
+  }
+  const isi = unitDariForm(fd);
+  nilaiForm = isi;
+  if (!isi.harga || isi.harga <= 0) {
+    galat = 'Harga wajib diisi dan lebih dari 0.';
+  } else {
+    try {
+      isi.foto = saringFoto(await prosesFotoUpload(fd, slug, isi.foto ?? []), slug);
+      updateUnit(slug, isi);
+      return Astro.redirect('/akun?notif=diubah');
+    } catch (err) {
+      galat = err instanceof Error ? err.message : 'Gagal menyimpan perubahan.';
+    }
+  }
+}
+---
+
+<AkunLayout title="Ubah produk" pengguna={pengguna} notif={galat ? { jenis: 'err', teks: galat } : null} kembali={{ href: '/akun', label: 'Produk saya' }}>
+  <header class="mb-6">
+    <h1 class="text-xl font-bold tracking-tight text-stone-900">Ubah produk</h1>
+    <p class="mt-1 text-sm text-stone-600">Slug URL tidak bisa diubah setelah produk dibuat.</p>
+    {
+      !bisaUbah && (
+        <p class="mt-2 rounded-md border border-amber-700 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Produk ini sedang ditinjau. Perubahanmu akan menimpa hasil peninjauan yang sedang berjalan.
+        </p>
+      )
+    }
+  </header>
+
+  <UnitForm
+    csrf={csrf}
+    action={`/akun/edit/${slug}`}
+    tombolLabel="Simpan perubahan"
+    nilai={nilaiForm}
+    gantiSlug={false}
+  />
+</AkunLayout>

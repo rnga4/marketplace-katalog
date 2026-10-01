@@ -1,0 +1,82 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ambilLapakBySlug, ambilPengguna, listUnitsLapak } from '../../lib/db';
+import { linkWa, inisial } from '../../data/site';
+import UnitHpCard from '../../components/UnitHpCard.astro';
+import NotFoundView from '../../components/NotFoundView.astro';
+
+const slug = Astro.params.slug ?? '';
+const lapak = ambilLapakBySlug(slug);
+const pemilik = lapak ? ambilPengguna(lapak.penggunaId) : null;
+
+// Lapak yang ditangguhkan atau pemiliknya tidak ada lagi tidak ditampilkan.
+const aktif = lapak && pemilik && pemilik.status === 'aktif';
+const semua = aktif ? listUnitsLapak(lapak.penggunaId) : [];
+
+if (!aktif) {
+  Astro.response.status = 404;
+}
+
+const waToko = aktif && lapak ? linkWa(`Halo ${lapak.nama}, saya lihat lapak kamu di katalog.`, lapak.whatsapp, lapak.nama) : null;
+const tersedia = semua.filter((u) => u.tersedia);
+---
+
+{
+  !aktif ? (
+    <NotFoundView />
+  ) : (
+    <BaseLayout
+      title={lapak.nama}
+      description={lapak.deskripsi || `Lapak ${lapak.nama} di katalog HP bekas.`}
+      kembali={{ href: '/', label: 'Katalog' }}
+    >
+      <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        <header class="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <div class="flex min-w-0 items-start gap-3">
+            <span class="flex size-12 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-sm font-bold text-white">
+              {inisial(lapak.nama)}
+            </span>
+            <div class="min-w-0">
+              <h1 class="truncate text-xl font-bold tracking-tight text-stone-900">{lapak.nama}</h1>
+              {lapak.lokasi && <p class="text-sm text-stone-600">{lapak.lokasi}</p>}
+              <p class="mt-1 text-sm text-stone-600">
+                {tersedia.length > 0 ? `${tersedia.length} unit tersedia` : 'Semua unit sudah terjual'}
+              </p>
+            </div>
+          </div>
+          {waToko && (
+            <a
+              href={waToko}
+              target="_blank"
+              rel="noopener"
+              class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800"
+            >
+              Chat WhatsApp
+            </a>
+          )}
+        </header>
+
+        {lapak.deskripsi && (
+          <p class="mb-8 rounded-md border border-garis bg-stone-50 px-4 py-3 text-sm text-stone-700">
+            {lapak.deskripsi}
+          </p>
+        )}
+
+        {semua.length === 0 ? (
+          <div class="rounded-md border border-dashed border-garis px-4 py-10 text-center">
+            <p class="text-sm font-medium text-stone-900">Lapak ini belum ada unit yang tayang</p>
+            <p class="mt-1 text-sm text-stone-600">Cek katalog untuk unit dari penjual lain.</p>
+          </div>
+        ) : (
+          <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {semua.map((u) => (
+              <li>
+                <UnitHpCard unit={u} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </BaseLayout>
+  )
+}

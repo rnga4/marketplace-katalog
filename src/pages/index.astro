@@ -7,7 +7,7 @@ import UnitHpCard from '../components/UnitHpCard.astro';
 const semua = listUnits();
 const unitTersedia = semua.filter((u) => u.tersedia);
 const site = ambilSite();
-const waUmum = linkWa(undefined, site);
+const waUmum = linkWa(undefined, site.whatsapp, site.nama);
 ---
 
 <BaseLayout>
@@ -51,7 +51,7 @@ const waUmum = linkWa(undefined, site);
     {
       unitTersedia.length > 0 ? (
         <div class="grid grid-cols-2 gap-0 border-t border-l border-garis md:grid-cols-3 lg:grid-cols-4">
-          {unitTersedia.map((unit) => <UnitHpCard unit={unit} />)}
+          {unitTersedia.map((unit, i) => <UnitHpCard unit={unit} urut={i} />)}
         </div>
       ) : (
         <div class="rounded-md border border-garis bg-stone-100 p-10 text-center">

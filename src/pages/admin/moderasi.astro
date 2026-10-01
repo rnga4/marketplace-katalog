@@ -1,0 +1,221 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import {
+  listAntrean,
+  jumlahAntrean,
+  labelKondisi,
+  hargaTercoret,
+  setModerasi,
+  type Moderasi,
+} from '../../lib/db';
+import { rupiah } from '../../lib/format';
+import { fotoSrc } from '../../lib/foto';
+import { waValid } from '../../data/site';
+import { cekCsrf, teksForm, NOTIF } from '../../lib/forms';
+import { bacaSesi } from '../../lib/auth';
+
+const sesi = bacaSesi(Astro.cookies);
+const csrf = sesi?.csrf ?? '';
+
+const tabParam = Astro.url.searchParams.get('tab');
+const tab: Moderasi = tabParam === 'tolak' || tabParam === 'tayang' ? tabParam : 'menunggu';
+const jumlah = jumlahAntrean();
+
+let notif = Astro.url.searchParams.get('notif');
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  if (!cekCsrf(fd, sesi)) {
+    notif = 'salahfasilitas';
+  } else {
+    const aksi = teksForm(fd, 'aksi');
+    const slug = teksForm(fd, 'slug');
+    const alasan = teksForm(fd, 'alasan');
+
+    // Hanya unit milik seller yang boleh diputuskan di halaman ini. Unit milik
+    // admin tidak punya moderasi dan tidak boleh bisa ditolak dari sini.
+    const baris = listAntrean('menunggu').find((u) => u.slug === slug)
+      ?? listAntrean('tolak').find((u) => u.slug === slug)
+      ?? listAntrean('tayang').find((u) => u.slug === slug);
+
+    if (!baris || baris.pemilikId === null) {
+      return Astro.redirect('/admin/moderasi');
+    }
+    if (aksi === 'terima') {
+      setModerasi(slug, 'tayang');
+      return Astro.redirect(`/admin/moderasi?notif=${baris.moderasi === 'tolak' ? 'diterima lagi' : 'diterima'}`);
+    }
+    if (aksi === 'tolak') {
+      setModerasi(slug, 'tolak', alasan || 'Tidak sesuai ketentuan katalog.');
+      return Astro.redirect('/admin/moderasi?notif=ditolak');
+    }
+    return Astro.redirect(`/admin/moderasi?tab=${baris.moderasi}`);
+  }
+}
+
+const infoNotif = notif ? NOTIF[notif] ?? null : null;
+const antrean = listAntrean(tab);
+const tabLabel: Record<Moderasi, string> = { menunggu: 'Menunggu', tayang: 'Tayang', tolak: 'Ditolak' };
+---
+
+<AdminLayout title="Moderasi" notif={infoNotif} kembali={{ href: '/admin', label: 'Unit katalog' }}>
+  <header class="mb-6">
+    <h1 class="text-xl font-bold tracking-tight text-stone-900">Moderasi seller</h1>
+    <p class="text-sm text-stone-600">
+      Produk dari seller baru tidak tayang sampai kamu terima di sini. Unit milik katalog sendiri tidak
+      perlu lewat antrean.
+    </p>
+  </header>
+
+  <nav class="mb-6 flex flex-wrap gap-1 border-b border-garis" aria-label="Status moderasi">
+    {
+      (['menunggu', 'tayang', 'tolak'] as Moderasi[]).map((m) => (
+        <a
+          href={`/admin/moderasi?tab=${m}`}
+          aria-current={tab === m ? 'page' : 'false'}
+          class={`target-sentuh -mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium ${
+            tab === m
+              ? 'border-aksi-teks text-aksi-teks'
+              : 'border-transparent text-stone-600 hover:border-stone-300 hover:text-stone-900'
+          }`}
+        >
+          {tabLabel[m]}
+          <span class="rounded-md bg-stone-100 px-1.5 text-xs text-stone-600">{jumlah[m]}</span>
+        </a>
+      ))
+    }
+  </nav>
+
+  {
+    antrean.length === 0 ? (
+      <div class="rounded-md border border-dashed border-garis p-10 text-center">
+        <p class="font-semibold text-stone-900">
+          {tab === 'menunggu' ? 'Tidak ada produk yang menunggu review.' : `Tidak ada produk ${tabLabel[tab].toLowerCase()}.`}
+        </p>
+        <p class="mt-1 text-sm text-stone-600">
+          {tab === 'menunggu' ? 'Semua produk seller sudah kamu putuskan.' : 'Cek tab lain untuk melihat daftar.'}
+        </p>
+      </div>
+    ) : (
+      <ul class="flex flex-col gap-4">
+        {antrean.map((unit) => {
+          const coret = hargaTercoret(unit);
+          return (
+            <li class="rounded-md border border-garis p-4">
+              <div class="flex flex-wrap gap-4">
+                {unit.foto[0] ? (
+                  <img
+                    src={fotoSrc(unit.foto[0], 'thumb')}
+                    alt=""
+                    width={96}
+                    height={96}
+                    loading="lazy"
+                    class="size-24 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
+                  />
+                ) : (
+                  <span class="flex size-24 shrink-0 items-center justify-center rounded-md border border-garis bg-stone-100 px-2 text-center text-xs text-stone-600">
+                    Tanpa foto
+                  </span>
+                )}
+
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-semibold text-stone-900">{unit.nama}</p>
+                  <p class="mt-0.5 text-xs text-stone-600">
+                    {labelKondisi(unit.kondisi)} · {rupiah(unit.harga)}
+                    {coret ? ` (coret ${rupiah(coret)})` : ''}
+                  </p>
+                  <p class="mt-0.5 text-xs text-stone-600">
+                    {unit.merk}
+                    {unit.kapasitas ? ` · ${unit.kapasitas}` : ''}
+                    {unit.warna ? ` · ${unit.warna}` : ''}
+                  </p>
+                  {unit.deskripsi && <p class="mt-2 text-sm text-stone-700">{unit.deskripsi}</p>}
+
+                  <p class="mt-2 text-xs text-stone-600">
+                    Penjual: <span class="font-medium text-stone-900">{unit.sellerNama}</span> ({unit.sellerEmail})
+                    {unit.lapakSlug && (
+                      <>
+                        {' · '}
+                        <a href={`/lapak/${unit.lapakSlug}`} class="text-aksi-teks underline">
+                          Lihat lapak
+                        </a>
+                      </>
+                    )}
+                  </p>
+                  {!waValid(unit.lapakWhatsapp) && (
+                    <p class="mt-1 text-xs text-amber-800">
+                      Penjual belum mengisi nomor WhatsApp, jadi produk ini tidak akan punya tombol WA.
+                    </p>
+                  )}
+                  {unit.foto.length > 1 && (
+                    <p class="mt-1 text-xs text-stone-500">{unit.foto.length} foto terunggah</p>
+                  )}
+                  {unit.alasanModerasi && (
+                    <p class="mt-2 rounded-md border border-red-700 bg-red-50 px-3 py-2 text-xs text-red-900">
+                      Ditolak sebelumnya: {unit.alasanModerasi}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <form method="post" action="/admin/moderasi" class="mt-4 flex flex-wrap items-end gap-3 border-t border-garis pt-4">
+                <input type="hidden" name="csrf" value={csrf} />
+                <input type="hidden" name="slug" value={unit.slug} />
+
+                {unit.moderasi === 'tayang' ? (
+                  <>
+                    <label class="flex min-w-48 flex-1 flex-col gap-1.5">
+                      <span class="text-xs font-medium text-stone-900">Alasan kalau ditarik</span>
+                      <input
+                        name="alasan"
+                        maxlength="200"
+                        placeholder="mis. foto tidak jelas"
+                        class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      name="aksi"
+                      value="tolak"
+                      class="target-sentuh inline-flex items-center rounded-md border border-red-700 px-4 text-sm font-semibold text-red-800 hover:bg-red-50"
+                    >
+                      Tarik dari katalog
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <label class="flex min-w-48 flex-1 flex-col gap-1.5">
+                      <span class="text-xs font-medium text-stone-900">Alasan penolakan</span>
+                      <input
+                        name="alasan"
+                        maxlength="200"
+                        placeholder="mis. harga tidak masuk akal, foto kurang jelas"
+                        class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      name="aksi"
+                      value="terima"
+                      class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800"
+                    >
+                      Terima
+                    </button>
+                    <button
+                      type="submit"
+                      name="aksi"
+                      value="tolak"
+                      class="target-sentuh inline-flex items-center rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-100"
+                    >
+                      Tolak
+                    </button>
+                  </>
+                )}
+              </form>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+</AdminLayout>

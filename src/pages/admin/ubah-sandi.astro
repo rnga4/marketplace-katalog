@@ -33,6 +33,7 @@ const csrf = sesi?.csrf ?? '';
 <AdminLayout
   title="Ubah kata sandi"
   notif={galat ? { jenis: 'err', teks: galat } : null}
+  kembali={{ href: '/admin', label: 'Unit katalog' }}
 >
   <header class="mb-6">
     <h1 class="text-xl font-bold tracking-tight text-stone-900">Ubah kata sandi</h1>

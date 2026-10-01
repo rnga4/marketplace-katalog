@@ -17,10 +17,10 @@ export const LEBAR_THUMB = 400;
 
 const KUALITAS = 78;
 
-type Ukuran = 'thumb' | 'sedang' | 'besar';
-type Varian = 't' | 'm' | null;
+type Ukuran = 'thumb' | 'sedang' | 'besar' | 'og';
+type Varian = 't' | 'm' | 'og' | null;
 
-const AKHIRAN: Record<Exclude<Ukuran, 'besar'>, Varian> = { thumb: 't', sedang: 'm' };
+const AKHIRAN: Record<Exclude<Ukuran, 'besar' | 'og'>, Varian> = { thumb: 't', sedang: 'm' };
 
 /** Fotografer iPhone sering HEIC, yang tidak bisa sharp decode. */
 function kayaknyaHeic(buf: Buffer): boolean {
@@ -45,7 +45,8 @@ function ada(nama: string): boolean {
  * lalu ke file aslinya. Tidak pernah menunjuk file yang tidak ada.
  */
 export function fotoSrc(nama: string, ukuran: Ukuran = 'besar'): string {
-  const coba: Varian[] = ukuran === 'besar' ? [null] : [AKHIRAN[ukuran], 'm', 't', null];
+  const coba: Varian[] =
+    ukuran === 'besar' ? [null] : ukuran === 'og' ? ['og', null] : [AKHIRAN[ukuran], 'm', 't', null];
   for (const v of coba) {
     const kandidat = namaVarian(nama, v);
     if (ada(kandidat)) return `/foto/${encodeURIComponent(kandidat)}`;
@@ -101,6 +102,12 @@ export async function simpanFoto(file: File, slug: string): Promise<string> {
       const buf = await olah(asal, lebar);
       writeFileSync(join(FOTO_DIR, namaVarian(nama, varian)), buf);
     }
+    const og = await sharp(asal, { failOn: 'none' })
+      .rotate()
+      .resize(1200, 630, { fit: 'cover' })
+      .webp({ quality: 80 })
+      .toBuffer();
+    writeFileSync(join(FOTO_DIR, namaVarian(nama, 'og')), og);
   } catch {
     throw new Error('Foto tidak bisa diproses. Pastikan file-nya gambar JPG atau PNG yang utuh.');
   }
@@ -109,7 +116,7 @@ export async function simpanFoto(file: File, slug: string): Promise<string> {
 
 /** Hapus file besar + varian -m/-t. Diam kalau sudah hilang. */
 export function hapusFoto(nama: string): void {
-  for (const v of [null, 'm', 't'] as Varian[]) {
+  for (const v of [null, 'm', 't', 'og'] as Varian[]) {
     try {
       unlinkSync(join(FOTO_DIR, basename(namaVarian(nama, v))));
     } catch {

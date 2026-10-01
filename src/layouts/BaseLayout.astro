@@ -4,13 +4,17 @@ import '../styles/global.css';
 
 import { ambilSite } from '../lib/db';
 import { urlAbsolut } from '../data/site';
+import fontLatin from '@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2?url';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import NavBawah from '../components/NavBawah.astro';
 
 interface Props {
   title?: string;
   description?: string;
   ogImage?: string;
+  /** Beranda tidak memakai tombol kembali karena tidak ada halaman sebelumnya. */
+  kembali?: { href: string; label: string } | null;
 }
 
 const site = ambilSite();
@@ -19,6 +23,7 @@ const {
   title = site.namaLengkap,
   description = site.deskripsi,
   ogImage = '/og-default.png',
+  kembali = null,
 } = Astro.props;
 
 const judulHalaman = title === site.namaLengkap ? site.namaLengkap : `${title} · ${site.nama}`;
@@ -42,13 +47,48 @@ const ogAbsolut = urlAbsolut(ogImage, Astro.site);
     <meta property="og:locale" content="id_ID" />
     <meta property="og:site_name" content={site.namaLengkap} />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preload" as="font" type="font/woff2" href={fontLatin} crossorigin />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <slot name="head" />
   </head>
-  <body>
-    <Header />
+  <body class="halaman-publik">
+    <Header kembali={kembali} />
     <main>
       <slot />
     </main>
     <Footer />
+    <NavBawah />
   </body>
 </html>
+<style is:global>
+  .header-tetap { view-transition-name: header; }
+  .nav-bawah { view-transition-name: nav-bawah; }
+  .foto-tunggu { opacity: 0; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @view-transition { navigation: auto; }
+    @keyframes vt-keluar { to { opacity: 0; } }
+    @keyframes vt-masuk { from { opacity: 0; } }
+    ::view-transition-old(root) { animation: 140ms ease-in both vt-keluar; }
+    ::view-transition-new(root) { animation: 240ms ease-out both vt-masuk; }
+
+    img[data-fade] { transition: opacity 0.35s ease-out, transform 0.3s ease-out; }
+    #foto-utama { transition: opacity 0.35s ease-out; }
+
+    @keyframes kartu-naik { from { opacity: 0; transform: translateY(10px); } }
+    .kartu-masuk {
+      animation: kartu-naik 0.4s ease-out both;
+      animation-delay: calc(var(--i, 0) * 45ms);
+    }
+  }
+</style>
+
+<script>
+  for (const img of document.querySelectorAll<HTMLImageElement>('img[data-fade]')) {
+    if (img.complete) continue;
+    img.classList.add('foto-tunggu');
+    const buka = () => img.classList.remove('foto-tunggu');
+    img.addEventListener('load', buka, { once: true });
+    img.addEventListener('error', buka, { once: true });
+  }
+</script>

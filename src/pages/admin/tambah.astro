@@ -36,7 +36,11 @@ if (Astro.request.method === 'POST') {
 }
 ---
 
-<AdminLayout title="Tambah unit" notif={galat ? { jenis: 'err', teks: galat } : null}>
+<AdminLayout
+  title="Tambah unit"
+  notif={galat ? { jenis: 'err', teks: galat } : null}
+  kembali={{ href: '/admin', label: 'Unit katalog' }}
+>
   <header class="mb-6">
     <h1 class="text-xl font-bold tracking-tight text-stone-900">Tambah unit baru</h1>
     <p class="text-sm text-stone-600">Unit langsung tampil di katalog publik setelah disimpan.</p>
