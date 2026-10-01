@@ -49,15 +49,16 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-if (!galat) {
-  Astro.cookies.set('hp_csrf', csrf, {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: cookieAman(Astro.request, Astro.url),
-    maxAge: 3600,
-  });
-}
+// Sama seperti /masuk: token yang dirender harus selalu sama dengan cookie,
+// termasuk setelah percobaan gagal. Kalau cookie tidak diperbarui, formulir
+// yang sudah terisi benar akan ditolak saat dikirim ulang.
+Astro.cookies.set('hp_csrf', csrf, {
+  path: '/',
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: cookieAman(Astro.request, Astro.url),
+  maxAge: 3600,
+});
 ---
 
 <!doctype html>

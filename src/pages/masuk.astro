@@ -52,15 +52,17 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-if (!galat && !info) {
-  Astro.cookies.set('hp_csrf', csrf, {
+// Cookie CSRF harus ikut dikirim di setiap render, bukan hanya saat halaman
+// tampil tanpa pesan. Kalau tidak, token di form tidak akan pernah sama dengan
+// cookie:registration melempar ke /masuk?daftar=1, dan `info` membuat syarat
+// lama ini tidak terpenuhi, sehingga login pertama setelah daftar selalu ditolak.
+Astro.cookies.set('hp_csrf', csrf, {
     path: '/',
     httpOnly: true,
     sameSite: 'lax',
     secure: cookieAman(Astro.request, Astro.url),
     maxAge: 3600,
-  });
-}
+});
 ---
 
 <!doctype html>
