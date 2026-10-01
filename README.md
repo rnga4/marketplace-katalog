@@ -17,6 +17,8 @@ Buka `http://localhost:8096`. Panel admin ada di `/admin`.
 
 Data disimpan di `./data` (SQLite + foto), tidak hilang saat container dibangun ulang. Hapus folder itu untuk mulai dari nol.
 
+Dua image dibangun dari sumber yang sama, dan keduanya harus ikut rebuild setelah perubahan CSS atau frontmatter: `app` menjalankan SSR-nya, `web` menyimpan berkas statis hasil build. Kalau hanya `app` yang dibangun ulang, halaman merujuk nama CSS baru sementara nginx masih melayani CSS lama, dan hasilnya 404 tanpa style — layout tandanya nav yang tidak lagi tersembunyi. Karena itu tetap pakai `docker compose up -d --build`, yang membangun keduanya.
+
 ## Kata sandi admin
 
 Kalau `ADMIN_PASSWORD` tidak diisi di `.env`, kata sandi acak dibuat saat database pertama kali dibuat dan dicetak sekali di log:
