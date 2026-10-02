@@ -388,6 +388,15 @@ function daftarTeks(v: unknown): string[] {
   return v.map((x) => String(x).trim()).filter((x) => x.length > 0);
 }
 
+/** Baca kolom JSON; data yang rusak jangan sampai menjatuhkan seluruh halaman. */
+function daftarJson(v: unknown): string[] {
+  try {
+    return daftarTeks(JSON.parse(String(v ?? '[]')));
+  } catch {
+    return [];
+  }
+}
+
 function integerNilai(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) ? Math.round(n) : 0;
@@ -411,10 +420,10 @@ function barisKeUnit(row: Record<string, unknown> | undefined): UnitHp | null {
     layar: satuan(nilaiTeks(row.layar), 'inci'),
     baterai: satuan(nilaiTeks(row.baterai), 'mAh'),
     imei: nilaiTeks(row.imei),
-    kelengkapan: daftarTeks(JSON.parse(String(row.kelengkapan ?? '[]'))),
-    catatan: daftarTeks(JSON.parse(String(row.catatan ?? '[]'))),
+    kelengkapan: daftarJson(row.kelengkapan),
+    catatan: daftarJson(row.catatan),
     deskripsi: nilaiTeks(row.deskripsi),
-    foto: daftarTeks(JSON.parse(String(row.foto ?? '[]'))),
+    foto: daftarJson(row.foto),
     pemilikId: row.pemilik_id === null || row.pemilik_id === undefined ? null : integerNilai(row.pemilik_id),
     moderasi: (row.moderasi === 'menunggu' || row.moderasi === 'tolak' ? row.moderasi : 'tayang') as Moderasi,
     alasanModerasi: nilaiTeks(row.alasan_moderasi),

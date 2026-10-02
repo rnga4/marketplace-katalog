@@ -1,0 +1,116 @@
+{
+  "_catatan": "Isi data contoh untuk menampilkan skema dan layout. Ganti seluruh isi dengan unit asli sebelum dipublikasikan. Foto default dibuat oleh `npm run gen:gambar`. Field yang tidak tahu nilainya, jangan diisi (biarkan kosong), jangan mengarang.",
+  "hp": [
+    {
+      "slug": "samsung-galaxy-a54-5g",
+      "nama": "Samsung Galaxy A54 5G",
+      "merk": "Samsung",
+      "seri": "Galaxy A54 5G",
+      "ram": "8 GB",
+      "kapasitas": "128 GB",
+      "warna": "Graphite",
+      "kondisi": "mulus",
+      "harga": 3100000,
+      "hargaAsli": null,
+      "tersedia": true,
+      "tahunRilis": 2023,
+      "layar": "6.4 inch Super AMOLED 120 Hz",
+      "baterai": "5000 mAh",
+      "kelengkapan": ["Unit HP", "Kabel USB-C", "Dus asli", "Kertas garansi"],
+      "catatan": [
+        "Baterai health 94%",
+        "Tidak ada lecet di bodi",
+        "IMEI terdaftar, fullset tanpa segel"
+      ],
+      "deskripsi": "Unit bekas pemakaian pribadi. Layar mulus tanpa baret, tombol responsif semua. Kondisi ini yang paling bersih di stok.",
+      "foto": [
+        "samsung-galaxy-a54-5g-1.webp",
+        "samsung-galaxy-a54-5g-2.webp",
+        "samsung-galaxy-a54-5g-3.webp"
+      ]
+    },
+    {
+      "slug": "iphone-12-64gb-biru",
+      "nama": "iPhone 12 64GB",
+      "merk": "Apple",
+      "seri": "iPhone 12",
+      "ram": "4 GB",
+      "kapasitas": "64 GB",
+      "warna": "Biru",
+      "kondisi": "minus",
+      "harga": 5450000,
+      "hargaAsli": null,
+      "tersedia": true,
+      "tahunRilis": 2020,
+      "layar": "6.1 inch Super Retina XDR",
+      "baterai": "2815 mAh, health 86%",
+      "kelengkapan": ["Unit HP", "Kabel Lightning", "Dus asli"],
+      "catatan": [
+        "Baterai health 86%",
+        "Lecet halus di frame bawah kiri",
+        "Kamera normal, Face ID normal"
+      ],
+      "deskripsi": "Baterai sudah turun ke 86%, sekitar pemakaian 2 tahun. Frame ada lecet halus yang hanya kelihatan dari dekat. Semua fungsi lain normal.",
+      "foto": [
+        "iphone-12-64gb-biru-1.webp",
+        "iphone-12-64gb-biru-2.webp",
+        "iphone-12-64gb-biru-3.webp"
+      ]
+    },
+    {
+      "slug": "xiaomi-redmi-note-11-abu",
+      "nama": "Xiaomi Redmi Note 11",
+      "merk": "Xiaomi",
+      "seri": "Redmi Note 11",
+      "ram": "6 GB",
+      "kapasitas": "128 GB",
+      "warna": "Abu-abu",
+      "kondisi": "mulus",
+      "harga": 1750000,
+      "hargaAsli": null,
+      "tersedia": true,
+      "tahunRilis": 2022,
+      "layar": "6.43 inch AMOLED",
+      "baterai": "5000 mAh",
+      "kelengkapan": ["Unit HP", "Kabel USB-C", "Charger", "Dus asli"],
+      "catatan": [
+        "Baterai health 91%",
+        "Fullset lengkap",
+        "Ada pelindung layar bekas dipakai"
+      ],
+      "deskripsi": "Unit fullset untuk pemakaian harian. Semua fungsi normal, pengisian cepat jalan. Cocok untuk yang butuh HP andal tanpa kelebihan.",
+      "foto": [
+        "xiaomi-redmi-note-11-abu-1.webp",
+        "xiaomi-redmi-note-11-abu-2.webp"
+      ]
+    },
+    {
+      "slug": "oppo-reno-8-putih",
+      "nama": "Oppo Reno 8",
+      "merk": "Oppo",
+      "seri": "Reno 8",
+      "ram": "8 GB",
+      "kapasitas": "256 GB",
+      "warna": "Putih",
+      "kondisi": "part",
+      "harga": 1450000,
+      "hargaAsli": 2900000,
+      "tersedia": true,
+      "tahunRilis": 2022,
+      "layar": "6.43 inch AMOLED (ada retak pojok kanan atas)",
+      "baterai": "4500 mAh",
+      "kelengkapan": ["Unit HP", "Kabel USB-C"],
+      "catatan": [
+        "Layar retak pojok kanan atas, sentuh tetap normal",
+        "Bodi mulus, tanpa lecet",
+        "Dijual apa adanya, tanpa garansi",
+        "Harga sudah dipotong untuk biaya ganti layar"
+      ],
+      "deskripsi": "Dijual karena layar ada retak di pojok kanan atas. Sentuh dan tampilan masih normal. Harga sudah termasuk pertimbangan biaya ganti layar.",
+      "foto": [
+        "oppo-reno-8-putih-1.webp",
+        "oppo-reno-8-putih-2.webp"
+      ]
+    }
+  ]
+}

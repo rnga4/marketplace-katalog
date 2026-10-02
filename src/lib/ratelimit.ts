@@ -43,16 +43,18 @@ export const terkunci = (kunci: Kunci): boolean => {
 };
 
 export const catatGagal = (kunci: Kunci): void => {
-  for (const k of kunci) {
-    const e = db.prepare('SELECT n, buka FROM percobaan WHERE kunci = ?').get(k) as
-      | { n: number; buka: number }
-      | undefined;
-    const n = e && e.buka > Date.now() ? e.n : 0;
-    db.prepare(
-      `INSERT INTO percobaan (kunci, n, buka) VALUES (?, ?, ?)
-       ON CONFLICT(kunci) DO UPDATE SET n = excluded.n, buka = excluded.buka`,
-    ).run(k, n + 1, Date.now() + KUNCI_MS);
-  }
+  const sekarang = Date.now();
+  const kedaluwarsa = sekarang + KUNCI_MS;
+  // Satu statement upsert supaya kenaikan penghitung tidak hilang saat dua
+  // percobaan datang bersamaan (baca-ubah-tulis bisa saling menimpa).
+  const sql = `
+    INSERT INTO percobaan (kunci, n, buka) VALUES (?, 1, ?)
+    ON CONFLICT(kunci) DO UPDATE SET
+      n = CASE WHEN percobaan.buka > ? THEN percobaan.n + 1 ELSE 1 END,
+      buka = ?
+  `;
+  const simpan = db.prepare(sql);
+  for (const k of kunci) simpan.run(k, kedaluwarsa, sekarang, kedaluwarsa);
 };
 
 export const bersihkan = (kunci: Kunci): void => {

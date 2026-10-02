@@ -48,7 +48,7 @@ const bantuan = 'text-xs text-stone-600';
   kembali={{ href: '/admin', label: 'Unit katalog' }}
   notif={galat
     ? { jenis: 'err', teks: galat }
-    : Astro.url.searchParams.has('notif')
+    : Astro.url.searchParams.get('notif') === 'identsimpan'
       ? { jenis: 'ok', teks: 'Identitas toko tersimpan.' }
       : null}
 >

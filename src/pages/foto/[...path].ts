@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { FOTO_DIR } from '../../lib/db';
 
 const EKSTENSI: Record<string, string> = {
@@ -17,9 +17,8 @@ const EKSTENSI: Record<string, string> = {
  * volume alias; rute ini ada supaya mode dev tanpa nginx tetap bisa menampilkan.
  */
 export const GET: APIRoute = async ({ params }) => {
-  const nama = params.path ?? '';
-  const aman = nama.replace(/\.\./g, '').replace(/\//g, '');
-  if (!aman) return new Response('Not Found', { status: 404 });
+  const aman = basename(params.path ?? '');
+  if (!aman || aman === '.' || aman === '..') return new Response('Not Found', { status: 404 });
 
   try {
     const data = await readFile(join(FOTO_DIR, aman));

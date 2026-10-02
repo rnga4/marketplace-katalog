@@ -5,6 +5,7 @@ import { getUnit, updateUnit, type UnitHp } from '../../../lib/db';
 import { bacaSesi, COOKIE_AKUN } from '../../../lib/auth';
 import { cekCsrf } from '../../../lib/forms';
 import { unitDariForm, prosesFotoUpload, saringFoto } from '../../../lib/formUnit';
+import { hapusFoto } from '../../../lib/foto';
 
 const pengguna = Astro.locals.pengguna!;
 const sesi = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
@@ -36,6 +37,8 @@ if (Astro.request.method === 'POST') {
     try {
       isi.foto = saringFoto(await prosesFotoUpload(fd, slug, isi.foto ?? []), slug);
       updateUnit(slug, isi);
+      // Foto yang dibuang dari daftar ikut dihapus dari disk supaya tidak menumpuk.
+      for (const f of unit.foto) if (!isi.foto.includes(f)) hapusFoto(f);
       return Astro.redirect('/akun?notif=diubah');
     } catch (err) {
       galat = err instanceof Error ? err.message : 'Gagal menyimpan perubahan.';

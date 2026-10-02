@@ -31,9 +31,13 @@ export function unitDariForm(fd: FormData): UnitInput {
 
 /** Slugs diisi manual, atau otomatis dari nama. Kembalikan null saat slug ada yg sama. */
 export async function slugDariForm(fd: FormData, nama: string, cekBentrok: (s: string) => boolean): Promise<string | null> {
-  let slug = teksForm(fd, 'slug');
+  let slug = teksForm(fd, 'slug').toLowerCase();
   if (!slug) slug = slugify(nama);
   if (!slug) return null;
+  // Slug dipakai sebagai nama file foto dan potongan URL, jadi hanya huruf kecil,
+  // angka, dan strip. Tanpa ini, slug berisi "/" atau ".." bisa menulis file di
+  // luar folder foto.
+  if (slug.length > 80 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(slug)) return null;
   if (cekBentrok(slug)) return null;
   return slug;
 }

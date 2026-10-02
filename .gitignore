@@ -5,7 +5,8 @@ dist/
 .DS_Store
 *.log
 
-# Data runtime (DB SQLite + foto hasil kelola admin)
-data/
+# Data runtime (DB SQLite + foto hasil kelola admin), hanya di akar repo.
+# Tanpa "/" di depan, pola ini ikut menelan src/data/ yang berisi kode sumber.
+/data/
 # Foto placeholder yang dihasilkan generator
 seed-foto/
