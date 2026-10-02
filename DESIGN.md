@@ -99,7 +99,7 @@ RHYTHM 2, tidak seragam. Komposisi tiap seksi berbeda (disesuaikan isi saat ekse
 
 - Beranda: hero satu kolom pendek, strip angka ringkas, daftar penjual, lalu pengumuman. Tanpa grid unit.
 - Katalog (`/katalog`): hero ringkas dengan pencarian, lalu grid dua kolom (HP) sampai empat kolom (layar lebar).
-- Detail unit: galeri foto di kiri, informasi harga dan kondisi di kanan, spesifikasi sebagai daftar garis bawah, bukan kartu.
+- Detail unit: galeri foto di kiri, informasi harga dan kondisi di kanan, spesifikasi sebagai daftar garis bawah, bukan kartu. Di mobile judul, status, dan ringkasan muncul di atas foto; harga dan tombol tetap di bawahnya.
 
 Padding seksi bervariasi: `seks-luas` (4.5rem) untuk blok berlatar penuh, `seks-rapat` (2.5rem) untuk daftar padat.
 
