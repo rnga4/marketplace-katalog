@@ -1,10 +1,7 @@
 ---
 import { ambilSite } from '../lib/db';
-import { bacaSesi, COOKIE_ADMIN, COOKIE_AKUN } from '../lib/auth';
 
 const site = ambilSite();
-const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
-const seller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 ---
 
 <footer class="border-t border-garis bg-dasar">
@@ -13,46 +10,6 @@ const seller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
       <p class="text-sm font-bold text-stone-900">{site.namaLengkap}</p>
       <p class="max-w-md text-sm text-stone-600 prosa">{site.deskripsi}</p>
     </div>
-    {
-      (admin || seller) && (
-        <div class="border-t border-garis pt-6">
-          <p class="text-sm font-bold text-stone-900">{admin ? 'Untuk pemilik' : 'Toko Anda'}</p>
-          <nav aria-label={admin ? 'Menu pemilik' : 'Menu penjual'} class="mt-2 flex flex-wrap gap-2">
-            {admin ? (
-              <>
-                <a
-                  href="/admin"
-                  class="target-sentuh inline-flex items-center rounded-md border border-garis px-3 font-medium text-stone-700 hover:bg-stone-100"
-                >
-                  Kelola katalog
-                </a>
-                <a
-                  href="/admin/pengaturan"
-                  class="target-sentuh inline-flex items-center rounded-md border border-garis px-3 font-medium text-stone-700 hover:bg-stone-100"
-                >
-                  Identitas toko
-                </a>
-              </>
-            ) : (
-              <>
-                <a
-                  href="/akun"
-                  class="target-sentuh inline-flex items-center rounded-md border border-garis px-3 font-medium text-stone-700 hover:bg-stone-100"
-                >
-                  Produk saya
-                </a>
-                <a
-                  href="/akun/toko"
-                  class="target-sentuh inline-flex items-center rounded-md border border-garis px-3 font-medium text-stone-700 hover:bg-stone-100"
-                >
-                  Setelan toko
-                </a>
-              </>
-            )}
-          </nav>
-        </div>
-      )
-    }
     <div class="border-t border-garis pt-6 text-sm text-stone-600">
       <p>
         Unit dijual oleh penjual independen. Kondisi setiap unit dijelaskan apa adanya di halamannya.
