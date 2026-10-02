@@ -56,6 +56,18 @@ textarea:focus-visible {
   min-height: 2.75rem;
 }
 
+/* Header publik menempel di atas. Katalog bisa panjang dan tidak ada footer di
+   setiap halaman, jadi tanpa ini orang yang menggulir ke bawah kehilangan
+   jalan kembali ke Katalog dan ke Akun. Sticky, bukan fixed: posisinya tetap
+   mengambil ruang di dalam dokumen, jadi tidak ada lompatan saat halaman
+   dimuat. Bar admin dan akun sengaja tidak ikut, panel itu rapat dan headernya
+   jadi dua baris di mobile. */
+.header-tetap {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
 /* Bar bawah hanya muncul di bawah 768px, jadi ruang konten yang dipesan juga
    hanya di lebar itu. Tingginya dipakai dua kali supaya tinggi bar dan ruang
    yang dipesan tidak pernah berbeda, dan safe-area perangkat tetap dihormati
