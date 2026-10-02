@@ -34,6 +34,8 @@ export interface Lapak {
   whatsapp: string;
   deskripsi: string;
   lokasi: string;
+  /** Nama file foto profil toko, kosong berarti memakai inisial nama. */
+  foto: string;
 }
 
 export interface Pengumuman {
@@ -131,7 +133,8 @@ db.exec(`
     nama          TEXT NOT NULL,
     whatsapp      TEXT NOT NULL DEFAULT '',
     deskripsi     TEXT NOT NULL DEFAULT '',
-    lokasi        TEXT NOT NULL DEFAULT ''
+    lokasi        TEXT NOT NULL DEFAULT '',
+    foto          TEXT NOT NULL DEFAULT ''
   );
 `);
 
@@ -187,7 +190,8 @@ if ((db.prepare('PRAGMA table_info(pengguna)').all() as { name: string }[]).some
       nama          TEXT NOT NULL,
       whatsapp      TEXT NOT NULL DEFAULT '',
       deskripsi     TEXT NOT NULL DEFAULT '',
-      lokasi        TEXT NOT NULL DEFAULT ''
+      lokasi        TEXT NOT NULL DEFAULT '',
+      foto          TEXT NOT NULL DEFAULT ''
     );
 
     INSERT INTO lapak_baru (id, pengguna_id, slug, nama, whatsapp, deskripsi, lokasi)
@@ -243,6 +247,11 @@ for (const [kolom, tipe] of KOLOM_HP_BARU) {
     (c) => c.name === kolom,
   );
   if (!ada) db.exec(`ALTER TABLE hp ADD COLUMN ${kolom} ${tipe}`);
+}
+
+/** Foto profil toko, ditambahkan seperti kolom pemilik: database lama tetap naik. */
+if (!(db.prepare('PRAGMA table_info(lapak)').all() as { name: string }[]).some((c) => c.name === 'foto')) {
+  db.exec("ALTER TABLE lapak ADD COLUMN foto TEXT NOT NULL DEFAULT ''");
 }
 
 db.exec(`
@@ -690,6 +699,7 @@ function barisKeLapak(row: Record<string, unknown> | undefined): Lapak | null {
     whatsapp: nilaiTeks(row.whatsapp),
     deskripsi: nilaiTeks(row.deskripsi),
     lokasi: nilaiTeks(row.lokasi),
+    foto: nilaiTeks(row.foto),
   };
 }
 
@@ -831,6 +841,12 @@ export function simpanLapak(penggunaId: number, l: Partial<Lapak>): Lapak {
   const hasil = ambilLapak(penggunaId);
   if (!hasil) throw new Error('Gagal menyimpan toko.');
   return hasil;
+}
+
+/** Ganti foto profil toko. Lapak harus sudah ada; ini tidak membuat lapak baru. */
+export function setFotoLapak(penggunaId: number, nama: string): void {
+  const hasil = db.prepare('UPDATE lapak SET foto = ? WHERE pengguna_id = ?').run(nama.trim(), penggunaId);
+  if (Number(hasil.changes) === 0) throw new Error('Lapak tidak ditemukan.');
 }
 
 /**

@@ -122,6 +122,8 @@ Navigasi mengikuti cara orang memakai katalog di HP, bukan tata letak dokumen.
 - **Tab aktif ditandai warna dan tebal, bukan titik atau badge.** Penanda posisi bukan informasi baru, jadi tidak perlu bentuk tambahan. Beranda dan Katalog sekarang halaman terpisah, jadi tab aktif ditentukan sekali di server dari path (`/` untuk Beranda, `/katalog`, `/hp/`, dan `/lapak/` untuk Katalog), tanpa `IntersectionObserver` yang mengikuti posisi gulir.
 - **Detail unit tidak lagi punya breadcrumb.** Tombol kembali di header sudah menjawab "ke mana dan ke mana saja", jadi baris `Katalog / nama` di atas hanya mengulanginya.
 
+- **`/akun` memakai bar bawah dan tombol kembali di atas.** Halaman kerja seller bukan panel admin, jadi ia ikut pola publik: bar bawah tiga tab tetap ada supaya seller bisa pindah ke Beranda atau Katalog tanpa lewat header, dan `/akun` (Produk saya) menampilkan tombol kembali ke Beranda di kiri atas, bukan tautan ke halaman itu sendiri. Subhalaman akun tetap memakai tombol kembali ke Produk saya. Saat tombol kembali sudah menuju `/akun`, chip identitas toko tidak ikut ditampilkan supaya tidak ada dua tautan ke tujuan yang sama.
+
 Panel admin tidak memakai bar bawah. Padat dan sering dipakai membandingkan isi, jadi menu tetap di atas dalam satu baris yang membungkus.
 
 ## Larangan
@@ -160,6 +162,7 @@ Aturannya: seller tetap mengunggah seperti biasa, pemrosesan terjadi di server d
 - **Browser yang memilih.** Detail dan katalog memakai `srcset`/`sizes`, bukan `width`/`height` tebakan. konsekuensinya galeri tetap benar di layar 390px maupun monitor lebar, dan layar retina 390px otomatis naik ke varian 1000px karena 400px akan terlihat pecah.
 - **Thumbnail bukan foto utama.** Tombol galeri menyimpan varian 1600px beserta `srcset`-nya, bukan file 400px. Kalau thumbnail yang dipasang sebagai foto utama, setiap klik galeri akan menurunkan kualitas foto — bug yang tidak terlihat di jaringan cepat tapi langsung terasa di paket data.
 - **Batas unggah 120 MB, bukan 25 MB.** Batas lama 25 MB ditolak oleh nginx sebelum sampai ke aplikasi, jadi seller hanya melihat "413 Request Entity Too Large" tanpa tahu kenapa. Karena foto langsung dikompres, batas yang lebih longgar tidak menambah pemakaian disk. Pelampauan batas tetap punya halaman sendiri yang menjelaskan cara mengatasinya.
+- **Foto profil toko memakai jalur yang sama.** `/akun/toko` menyimpan foto lewat `simpanFoto()` dengan varian thumb/sedang/besar, dan satu kolom `lapak.foto` menyimpan nama file besarnya. Avatar di header `/akun` dan di halaman lapak publik memakai varian 400px, jadi tidak ada file besar yang diunduh hanya untuk avatar. Mengganti foto menghapus file lama setelah yang baru tersimpan; menghapus foto mengembalikan avatar ke inisial nama toko, bukan gambar karangan (R-23, R-38).
 - **Label placeholder wajib terbaca.** `FOTO CONTOH` ditulis lewat SVG `<text>`. Tanpa font di tahap build, librsvg mengabaikannya dan seluruh placeholder satu unit menjadi file identik — katalog penuh foto yang sama tanpa tanda bahwa itu contoh. `scripts/generate-sample-images.mjs` sekarang membandingkan hasil render dan berhenti kalau teksnya hilang, bukan diam-diam menghasilkan 10 foto yang sama.
 
 ## Identitas dari panel, bukan dari kode

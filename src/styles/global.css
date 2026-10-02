@@ -98,9 +98,11 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
-/* Tanpa ini, footer dan unit terakhir tertutup bar, karena bar-nya fixed. */
+/* Tanpa ini, footer dan unit terakhir tertutup bar, karena bar-nya fixed.
+   Dipilih lewat :has supaya tata letak mana pun yang memuat bar bawah otomatis
+   memesan ruangnya, termasuk /akun, tanpa perlu menandai body satu per satu. */
 @media (width < 48rem) {
-  .halaman-publik {
+  body:has(.nav-bawah) {
     padding-bottom: calc(var(--tinggi-nav-bawah) + env(safe-area-inset-bottom, 0px));
   }
 }

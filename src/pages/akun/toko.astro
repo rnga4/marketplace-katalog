@@ -1,10 +1,16 @@
 ---
 import AkunLayout from '../../layouts/AkunLayout.astro';
 import { bacaSesi, COOKIE_AKUN } from '../../lib/auth';
-import { ambilLapak, cekKataSandiPengguna, setKataSandiPengguna, simpanLapak } from '../../lib/db';
-import { normalisasiWa } from '../../data/site';
+import {
+  ambilLapak,
+  cekKataSandiPengguna,
+  setKataSandiPengguna,
+  setFotoLapak,
+  simpanLapak,
+} from '../../lib/db';
+import { simpanFoto, hapusFoto, fotoSrc } from '../../lib/foto';
+import { normalisasiWa, waValid, inisial } from '../../data/site';
 import { cekCsrf, teksForm, NOTIF } from '../../lib/forms';
-import { waValid } from '../../data/site';
 
 const pengguna = Astro.locals.pengguna!;
 const sesi = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
@@ -51,6 +57,33 @@ if (Astro.request.method === 'POST') {
       setKataSandiPengguna(pengguna.id, baru);
       return Astro.redirect('/akun/toko?notif=sandiberubah');
     }
+  } else if (aksi === 'foto') {
+    const file = fd.get('fotoBaru');
+    if (!lapak) {
+      galat = 'Simpan identitas toko dulu sebelum mengunggah foto.';
+    } else if (!(file instanceof File) || file.size === 0) {
+      galat = 'Pilih file foto dulu.';
+    } else if (!file.type.startsWith('image/')) {
+      galat = 'File harus berupa gambar JPG, PNG, atau WebP.';
+    } else {
+      try {
+        const lama = lapak.foto;
+        const nama = await simpanFoto(file, lapak.slug);
+        setFotoLapak(pengguna.id, nama);
+        // File lama dihapus setelah yang baru tersimpan, supaya kalau unggah
+        // gagal foto lama tidak ikut hilang.
+        if (lama) hapusFoto(lama);
+        return Astro.redirect('/akun/toko?notif=fotolapak');
+      } catch (err) {
+        galat = err instanceof Error ? err.message : 'Gagal mengunggah foto.';
+      }
+    }
+  } else if (aksi === 'hapusfoto') {
+    if (lapak?.foto) {
+      setFotoLapak(pengguna.id, '');
+      hapusFoto(lapak.foto);
+    }
+    return Astro.redirect('/akun/toko?notif=fotohapus');
   }
 }
 
@@ -63,8 +96,60 @@ const notif = galat
 <AkunLayout title="Setelan toko" pengguna={pengguna} notif={notif} kembali={{ href: '/akun', label: 'Produk saya' }}>
   <header class="mb-6">
     <h1 class="text-xl font-bold tracking-tight text-stone-900">Setelan toko</h1>
-    <p class="mt-1 text-sm text-stone-600">Nama, WhatsApp, dan deskripsi lapakmu tampil di halaman publik.</p>
+    <p class="mt-1 text-sm text-stone-600">Foto, nama, WhatsApp, dan deskripsi lapakmu tampil di halaman publik.</p>
   </header>
+
+  <section class="mb-8 rounded-md border border-garis p-5">
+    <h2 class="text-sm font-bold text-stone-900">Foto toko</h2>
+    <p class="mt-1 text-sm text-stone-600">Dipakai sebagai avatar tokomu. Kalau belum ada, pembeli melihat inisial nama toko.</p>
+    <div class="mt-4 flex flex-wrap items-center gap-4">
+      {
+        lapak?.foto ? (
+          <img
+            src={fotoSrc(lapak.foto, 'thumb')}
+            alt={`Foto ${lapak.nama}`}
+            width={64}
+            height={64}
+            class="size-16 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
+          />
+        ) : (
+          <span class="flex size-16 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-lg font-bold text-white">
+            {inisial(pengguna.nama)}
+          </span>
+        )
+      }
+      <div class="flex min-w-0 flex-1 flex-col gap-3">
+        <form method="post" action="/akun/toko" enctype="multipart/form-data" class="flex flex-col gap-2">
+          <input type="hidden" name="csrf" value={csrf} />
+          <input type="hidden" name="aksi" value="foto" />
+          <input
+            id="fotoBaru"
+            type="file"
+            name="fotoBaru"
+            accept="image/jpeg,image/png,image/webp"
+            required
+            class="text-sm text-stone-900 file:mr-3 file:rounded-md file:border-0 file:bg-aksi file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+          />
+          <div>
+            <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">
+              Unggah foto
+            </button>
+          </div>
+        </form>
+        {
+          lapak?.foto && (
+            <form method="post" action="/akun/toko">
+              <input type="hidden" name="csrf" value={csrf} />
+              <input type="hidden" name="aksi" value="hapusfoto" />
+              <button type="submit" class="target-sentuh inline-flex items-center text-sm font-medium text-red-800 underline">
+                Hapus foto
+              </button>
+            </form>
+          )
+        }
+      </div>
+    </div>
+  </section>
 
   <form method="post" action="/akun/toko" class="mb-8 flex flex-col gap-4 rounded-md border border-garis p-5">
     <input type="hidden" name="csrf" value={csrf} />

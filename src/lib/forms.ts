@@ -58,6 +58,8 @@ export const NOTIF: Record<string, { jenis: 'ok' | 'err'; teks: string }> = {
   ditolak: { jenis: 'ok', teks: 'Produk ditolak. Seller bisa melihat alasannya di akunnya.' },
   kirim: { jenis: 'ok', teks: 'Produk terkirim. Tunggu ditinjau admin sebelum tayang.' },
   tokosimpan: { jenis: 'ok', teks: 'Pengaturan toko disimpan.' },
+  fotolapak: { jenis: 'ok', teks: 'Foto toko diperbarui.' },
+  fotohapus: { jenis: 'ok', teks: 'Foto toko dihapus.' },
   sandiberubah: { jenis: 'ok', teks: 'Kata sandi berhasil diganti.' },
   pengumumansimpan: { jenis: 'ok', teks: 'Pengumuman disimpan.' },
   pengumumanhapus: { jenis: 'ok', teks: 'Pengumuman dihapus.' },

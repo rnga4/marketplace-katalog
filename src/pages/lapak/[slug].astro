@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { ambilLapakBySlug, ambilPengguna, listUnitsLapak } from '../../lib/db';
 import { linkWa, inisial } from '../../data/site';
+import { fotoSrc } from '../../lib/foto';
 import UnitHpCard from '../../components/UnitHpCard.astro';
 import NotFoundView from '../../components/NotFoundView.astro';
 
@@ -35,9 +36,19 @@ const tersedia = semua.filter((u) => u.tersedia);
       <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <header class="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div class="flex min-w-0 items-start gap-3">
-            <span class="flex size-12 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-sm font-bold text-white">
-              {inisial(lapak.nama)}
-            </span>
+            {lapak.foto ? (
+              <img
+                src={fotoSrc(lapak.foto, 'thumb')}
+                alt={`Foto ${lapak.nama}`}
+                width={48}
+                height={48}
+                class="size-12 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
+              />
+            ) : (
+              <span class="flex size-12 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-sm font-bold text-white">
+                {inisial(lapak.nama)}
+              </span>
+            )}
             <div class="min-w-0">
               <h1 class="truncate text-xl font-bold tracking-tight text-stone-900">{lapak.nama}</h1>
               {lapak.lokasi && <p class="text-sm text-stone-600">{lapak.lokasi}</p>}

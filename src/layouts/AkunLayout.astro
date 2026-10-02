@@ -4,7 +4,9 @@ import '../styles/global.css';
 
 import { bacaSesi, COOKIE_AKUN } from '../lib/auth';
 import { ambilLapak, type Pengguna } from '../lib/db';
+import { fotoSrc } from '../lib/foto';
 import Kembali from '../components/Kembali.astro';
+import NavBawah from '../components/NavBawah.astro';
 
 interface Props {
   title: string;
@@ -19,6 +21,10 @@ const lapak = ambilLapak(sesi.id);
 const sesiAkun = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 const csrf = sesiAkun?.csrf ?? '';
 const aktif = Astro.url.pathname.replace(/\/$/, '') || '/akun';
+const namaToko = lapak?.nama ?? 'Toko saya';
+// Tautan identitas menuju /akun. Saat tombol kembali sudah menuju /akun juga,
+// keduanya jadi jalur yang sama, jadi identitas disembunyikan agar tidak ganda.
+const tampilIdentitas = !kembali || kembali.href !== '/akun';
 ---
 
 <!doctype html>
@@ -33,18 +39,29 @@ const aktif = Astro.url.pathname.replace(/\/$/, '') || '/akun';
   <body class="bg-dasar font-sans text-stone-900 antialiased">
     <header class="border-b border-garis bg-dasar">
       <div class="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between md:gap-3">
-        {
-          kembali ? (
-            <Kembali href={kembali.href} label={kembali.label} />
-          ) : (
-            <a href="/akun" class="target-sentuh flex min-w-0 items-center gap-2 self-start">
-              <span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
-                {sesi.nama.slice(0, 2).toUpperCase()}
-              </span>
-              <span class="truncate text-sm font-bold tracking-tight text-stone-900">{lapak?.nama ?? 'Toko saya'}</span>
-            </a>
-          )
-        }
+        <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          {kembali && <Kembali href={kembali.href} label={kembali.label} />}
+          {
+            tampilIdentitas && (
+              <a href="/akun" class="target-sentuh flex min-w-0 items-center gap-2">
+                {lapak?.foto ? (
+                  <img
+                    src={fotoSrc(lapak.foto, 'thumb')}
+                    alt=""
+                    width={32}
+                    height={32}
+                    class="size-8 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
+                  />
+                ) : (
+                  <span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
+                    {sesi.nama.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                <span class="truncate text-sm font-bold tracking-tight text-stone-900">{namaToko}</span>
+              </a>
+            )
+          }
+        </div>
         <nav class="flex flex-wrap items-center gap-1 md:ml-auto" aria-label="Navigasi toko">
           <a
             href="/akun"
@@ -97,6 +114,7 @@ const aktif = Astro.url.pathname.replace(/\/$/, '') || '/akun';
       }
       <slot />
     </main>
+    <NavBawah />
   </body>
 </html>
 
