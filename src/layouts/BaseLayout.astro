@@ -15,10 +15,6 @@ interface Props {
   ogImage?: string;
   /** Beranda tidak memakai tombol kembali karena tidak ada halaman sebelumnya. */
   kembali?: { href: string; label: string } | null;
-  /** Set false di halaman yang sudah punya tombol WhatsApp aksen sendiri. */
-  tombolWa?: boolean;
-  /** Nomor tujuan tombol header, kalau halaman ini punya nomor yang lebih tepat. */
-  wa?: string | null;
 }
 
 const site = ambilSite();
@@ -28,8 +24,6 @@ const {
   description = site.deskripsi,
   ogImage = '/og-default.png',
   kembali = null,
-  tombolWa = true,
-  wa = null,
 } = Astro.props;
 
 const judulHalaman = title === site.namaLengkap ? site.namaLengkap : `${title} · ${site.nama}`;
@@ -58,7 +52,7 @@ const ogAbsolut = urlAbsolut(ogImage, Astro.site);
     <slot name="head" />
   </head>
   <body>
-    <Header kembali={kembali} tombolWa={tombolWa} wa={wa} />
+    <Header kembali={kembali} />
     <main>
       <slot />
     </main>

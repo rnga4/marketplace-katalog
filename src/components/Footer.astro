@@ -1,10 +1,8 @@
 ---
 import { ambilSite } from '../lib/db';
-import { linkWa } from '../data/site';
 import { bacaSesi, COOKIE_ADMIN, COOKIE_AKUN } from '../lib/auth';
 
 const site = ambilSite();
-const wa = linkWa(undefined, site.whatsapp, site.nama);
 const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
 const seller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 ---
@@ -55,20 +53,10 @@ const seller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
         </div>
       )
     }
-    <div class="flex flex-col gap-2 border-t border-garis pt-6 text-sm text-stone-600 sm:flex-row sm:items-center sm:justify-between">
+    <div class="border-t border-garis pt-6 text-sm text-stone-600">
       <p>
         Unit dijual oleh penjual independen. Kondisi setiap unit dijelaskan apa adanya di halamannya.
       </p>
-      {
-        wa && (
-          <a
-            href={wa}
-            class="target-sentuh inline-flex items-center self-start rounded-md px-3 font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks sm:self-auto"
-          >
-            Tanya lewat WhatsApp
-          </a>
-        )
-      }
     </div>
   </div>
 </footer>
