@@ -46,7 +46,7 @@ const adaFilter = cari !== '' || lapak !== '';
           )
         }
         {
-          waUmum && !adaFilter && (
+          waUmum && (
             <a
               href={waUmum}
               class="target-sentuh inline-flex w-full items-center justify-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800 md:w-auto"
@@ -102,7 +102,7 @@ const adaFilter = cari !== '' || lapak !== '';
         </div>
         <button
           type="submit"
-          class="target-sentuh rounded-md bg-aksi px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800"
+          class="target-sentuh rounded-md border border-stone-300 bg-dasar px-5 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-100"
         >
           Terapkan
         </button>
@@ -111,7 +111,7 @@ const adaFilter = cari !== '' || lapak !== '';
       {
         adaFilter && (
           <p class="text-sm text-stone-600">
-            <a href="/#katalog" class="text-aksi-teks underline">
+            <a href="/#katalog" class="target-sentuh text-aksi-teks inline-flex items-center underline">
               Hapus filter
             </a>
           </p>
