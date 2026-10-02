@@ -2,6 +2,7 @@
 import { PILIHAN_KONDISI } from '../../lib/forms';
 import type { UnitHp, Kondisi } from '../../lib/db';
 import { fotoSrc } from '../../lib/foto';
+import { angkaRibuan } from '../../lib/format';
 
 interface Props {
   csrf: string;
@@ -69,11 +70,11 @@ const fotoTerpilih = nilai.foto ?? [];
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5">
         <span class="text-sm font-medium text-stone-900">Harga jual (Rp) <b class="text-red-800">*</b></span>
-        <input name="harga" required inputmode="numeric" value={nilai.harga?.toString() ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+        <input name="harga" required inputmode="numeric" data-ribuan value={angkaRibuan(nilai.harga)} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
       </label>
       <label class="flex flex-col gap-1.5">
         <span class="text-sm font-medium text-stone-900">Harga coret (Rp, saat promo)</span>
-        <input name="hargaAsli" inputmode="numeric" value={nilai.hargaAsli?.toString() ?? ''} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
+        <input name="hargaAsli" inputmode="numeric" data-ribuan value={angkaRibuan(nilai.hargaAsli)} class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none" />
       </label>
       <label class="flex flex-col gap-1.5">
         <span class="text-sm font-medium text-stone-900">Kondisi</span>
@@ -165,8 +166,32 @@ Kabel USB-C" class="target-sentuh rounded-md border border-stone-300 bg-dasar px
   </div>
 </form>
 <script>
+  const rapikanRibuan = (input: HTMLInputElement) => {
+    const angka = input.value.replace(/\D/g, '').slice(0, 15);
+    input.value = angka ? Number(angka).toLocaleString('id-ID') : '';
+  };
+
+  for (const input of document.querySelectorAll<HTMLInputElement>('input[data-ribuan]')) {
+    input.addEventListener('input', () => {
+      const sebelum = input.value
+        .slice(0, input.selectionStart ?? input.value.length)
+        .replace(/\D/g, '').length;
+      rapikanRibuan(input);
+      let pos = 0;
+      let lihat = 0;
+      while (pos < input.value.length && lihat < sebelum) {
+        if (/\d/.test(input.value.charAt(pos))) lihat++;
+        pos++;
+      }
+      input.setSelectionRange(pos, pos);
+    });
+  }
+
   for (const form of document.querySelectorAll<HTMLFormElement>('form[data-simpan]')) {
     form.addEventListener('submit', () => {
+      for (const input of form.querySelectorAll<HTMLInputElement>('input[data-ribuan]')) {
+        input.value = input.value.replace(/\D/g, '');
+      }
       const tombol = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       if (!tombol) return;
       tombol.textContent = form.dataset.simpan ?? 'Menyimpan…';
