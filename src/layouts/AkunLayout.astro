@@ -38,12 +38,20 @@ const tampilIdentitas = !kembali || kembali.href !== '/akun';
   </head>
   <body class="bg-dasar font-sans text-stone-900 antialiased">
     <header class="border-b border-garis bg-dasar">
-      <div class="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between md:gap-3">
-        <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+      <div class="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:px-6 md:flex-row md:items-center md:gap-3">
+        {/* Di mobile baris atas memisah: kembali di kiri, identitas di kanan.
+            Di desktop `contents` melepas pembungkus ini supaya kembali dan nav
+            menempel kiri, sementara identitas didorong ke pojok kanan lewat
+            `ml-auto`. Foto selalu di ujung kanan identitas, namanya di kirinya. */}
+        <div class="flex min-w-0 items-center justify-between gap-3 md:contents">
           {kembali && <Kembali href={kembali.href} label={kembali.label} />}
           {
             tampilIdentitas && (
-              <a href="/akun" class="target-sentuh flex min-w-0 items-center gap-2">
+              <a
+                href="/akun"
+                class="target-sentuh flex min-w-0 items-center gap-2 md:order-2 md:ml-auto"
+              >
+                <span class="truncate text-sm font-bold tracking-tight text-stone-900">{namaToko}</span>
                 {lapak?.foto ? (
                   <img
                     src={fotoSrc(lapak.foto, 'thumb')}
@@ -57,12 +65,11 @@ const tampilIdentitas = !kembali || kembali.href !== '/akun';
                     {sesi.nama.slice(0, 2).toUpperCase()}
                   </span>
                 )}
-                <span class="truncate text-sm font-bold tracking-tight text-stone-900">{namaToko}</span>
               </a>
             )
           }
         </div>
-        <nav class="flex flex-wrap items-center gap-1 md:ml-auto" aria-label="Navigasi toko">
+        <nav class="flex flex-wrap items-center gap-1" aria-label="Navigasi toko">
           <a
             href="/akun"
             aria-current={aktif === '/akun' ? 'page' : 'false'}
