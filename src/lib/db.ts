@@ -446,6 +446,8 @@ export interface UnitKatalog extends UnitHp {
 export interface LapakFilter {
   slug: string;
   nama: string;
+  /** Nama file foto profil toko, kosong berarti beranda memakai inisial nama. */
+  foto: string;
   jumlah: number;
 }
 
@@ -550,10 +552,10 @@ export function listLapakTayang(): LapakFilter[] {
 export function listLapakTersedia(): LapakFilter[] {
   return db
     .prepare(
-      `SELECT l.slug, l.nama, COUNT(hp.slug) AS jumlah
+      `SELECT l.slug, l.nama, l.foto, COUNT(hp.slug) AS jumlah
        FROM lapak l JOIN hp ON hp.pemilik_id = l.pengguna_id
          AND hp.moderasi = 'tayang' AND hp.tersedia = 1
-       GROUP BY l.slug, l.nama
+       GROUP BY l.slug, l.nama, l.foto
        ORDER BY jumlah DESC, l.nama ASC`,
     )
     .all() as unknown as LapakFilter[];

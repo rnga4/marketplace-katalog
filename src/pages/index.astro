@@ -7,6 +7,7 @@ import {
   statistikRingkas,
 } from '../lib/db';
 import { linkWa, inisial } from '../data/site';
+import { fotoSrc } from '../lib/foto';
 
 const q = Astro.url.searchParams;
 
@@ -78,9 +79,19 @@ const pengumuman = listPengumuman(true).slice(0, 4);
                 href={`/lapak/${l.slug}`}
                 class="target-sentuh flex items-center gap-3 border-r border-b border-garis px-4 py-4 hover:bg-stone-100"
               >
-                <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-stone-900 text-sm font-bold text-white">
-                  {inisial(l.nama)}
-                </span>
+                {l.foto ? (
+                  <img
+                    src={fotoSrc(l.foto, 'thumb')}
+                    alt=""
+                    width={40}
+                    height={40}
+                    class="size-10 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
+                  />
+                ) : (
+                  <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-stone-900 text-sm font-bold text-white">
+                    {inisial(l.nama)}
+                  </span>
+                )}
                 <span class="min-w-0 flex-1">
                   <span class="block truncate font-semibold text-stone-900">{l.nama}</span>
                   <span class="block text-sm text-stone-600">{l.jumlah} unit tersedia</span>
