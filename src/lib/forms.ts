@@ -59,4 +59,7 @@ export const NOTIF: Record<string, { jenis: 'ok' | 'err'; teks: string }> = {
   kirim: { jenis: 'ok', teks: 'Produk terkirim. Tunggu ditinjau admin sebelum tayang.' },
   tokosimpan: { jenis: 'ok', teks: 'Pengaturan toko disimpan.' },
   sandiberubah: { jenis: 'ok', teks: 'Kata sandi berhasil diganti.' },
+  pengumumansimpan: { jenis: 'ok', teks: 'Pengumuman disimpan.' },
+  pengumumanhapus: { jenis: 'ok', teks: 'Pengumuman dihapus.' },
+  pengumumanstatus: { jenis: 'ok', teks: 'Status pengumuman diperbarui.' },
 };

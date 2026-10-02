@@ -36,6 +36,15 @@ export interface Lapak {
   lokasi: string;
 }
 
+export interface Pengumuman {
+  id: number;
+  judul: string;
+  isi: string;
+  aktif: boolean;
+  dibuatPada: number;
+  diubahPada: number;
+}
+
 export interface UnitHp {
   slug: string;
   nama: string;
@@ -255,6 +264,17 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS klik_slug_ts ON klik (slug, ts);
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pengumuman (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    judul       TEXT NOT NULL,
+    isi         TEXT NOT NULL,
+    aktif       INTEGER NOT NULL DEFAULT 1,
+    dibuat_pada INTEGER NOT NULL,
+    diubah_pada INTEGER NOT NULL
+  );
+`);
+
 export function catatKlik(slug: string): void {
   db.prepare('INSERT INTO klik (slug, ts) VALUES (?, ?)').run(slug, Date.now());
 }
@@ -272,6 +292,73 @@ export const LABEL_KONDISI: Record<Kondisi, string> = {
   minus: 'Minus',
   part: 'Part',
 };
+
+export const MAKS_JUDUL_PENGUMUMAN = 120;
+export const MAKS_ISI_PENGUMUMAN = 2000;
+
+function barisKePengumuman(r: Record<string, unknown>): Pengumuman {
+  return {
+    id: Number(r.id),
+    judul: String(r.judul ?? ''),
+    isi: String(r.isi ?? ''),
+    aktif: Number(r.aktif) === 1,
+    dibuatPada: Number(r.dibuat_pada ?? 0),
+    diubahPada: Number(r.diubah_pada ?? 0),
+  };
+}
+
+/** Info yang ditulis admin. Urut dari yang paling baru. */
+export function listPengumuman(aktifSaja = false): Pengumuman[] {
+  const sql = aktifSaja
+    ? 'SELECT * FROM pengumuman WHERE aktif = 1 ORDER BY dibuat_pada DESC, id DESC'
+    : 'SELECT * FROM pengumuman ORDER BY dibuat_pada DESC, id DESC';
+  return (db.prepare(sql).all() as Record<string, unknown>[]).map(barisKePengumuman);
+}
+
+export function ambilPengumuman(id: number): Pengumuman | null {
+  const r = db.prepare('SELECT * FROM pengumuman WHERE id = ?').get(id) as
+    | Record<string, unknown>
+    | undefined;
+  return r ? barisKePengumuman(r) : null;
+}
+
+/** Simpan baru atau perbarui yang sudah ada. `id` kosong berarti baris baru. */
+export function simpanPengumuman(input: {
+  id?: number;
+  judul: string;
+  isi: string;
+  aktif: boolean;
+}): Pengumuman {
+  const sekarang = Date.now();
+  if (input.id) {
+    db.prepare('UPDATE pengumuman SET judul = ?, isi = ?, aktif = ?, diubah_pada = ? WHERE id = ?').run(
+      input.judul,
+      input.isi,
+      input.aktif ? 1 : 0,
+      sekarang,
+      input.id,
+    );
+    return ambilPengumuman(input.id)!;
+  }
+  const hasil = db
+    .prepare(
+      'INSERT INTO pengumuman (judul, isi, aktif, dibuat_pada, diubah_pada) VALUES (?, ?, ?, ?, ?)',
+    )
+    .run(input.judul, input.isi, input.aktif ? 1 : 0, sekarang, sekarang);
+  return ambilPengumuman(Number(hasil.lastInsertRowid))!;
+}
+
+export function setPengumumanAktif(id: number, aktif: boolean): void {
+  db.prepare('UPDATE pengumuman SET aktif = ?, diubah_pada = ? WHERE id = ?').run(
+    aktif ? 1 : 0,
+    Date.now(),
+    id,
+  );
+}
+
+export function hapusPengumuman(id: number): void {
+  db.prepare('DELETE FROM pengumuman WHERE id = ?').run(id);
+}
 
 export function labelKondisi(kondisi: Kondisi): string {
   return LABEL_KONDISI[kondisi];
@@ -448,6 +535,45 @@ export function listLapakTayang(): LapakFilter[] {
        ORDER BY jumlah DESC, l.nama ASC`,
     )
     .all() as unknown as LapakFilter[];
+}
+
+/** Lapak yang punya minimal satu unit tersedia, untuk daftar penjual di beranda. */
+export function listLapakTersedia(): LapakFilter[] {
+  return db
+    .prepare(
+      `SELECT l.slug, l.nama, COUNT(hp.slug) AS jumlah
+       FROM lapak l JOIN hp ON hp.pemilik_id = l.pengguna_id
+         AND hp.moderasi = 'tayang' AND hp.tersedia = 1
+       GROUP BY l.slug, l.nama
+       ORDER BY jumlah DESC, l.nama ASC`,
+    )
+    .all() as unknown as LapakFilter[];
+}
+
+/**
+ * Angka ringkas beranda. Keduanya hitungan nyata dari katalog: unit yang masih
+ * tayang dan tersedia, serta lapak yang punya minimal satu unit tersedia.
+ * Nilai yang tidak bisa diverifikasi tidak ditampilkan (DESIGN.md).
+ */
+export function statistikRingkas(): { unitTersedia: number; penjual: number } {
+  const unitTersedia = Number(
+    (
+      db
+        .prepare("SELECT COUNT(*) AS n FROM hp WHERE moderasi = 'tayang' AND tersedia = 1")
+        .get() as { n: number }
+    ).n,
+  );
+  const penjual = Number(
+    (
+      db
+        .prepare(
+          `SELECT COUNT(DISTINCT l.id) AS n FROM lapak l JOIN hp ON hp.pemilik_id = l.pengguna_id
+           WHERE hp.moderasi = 'tayang' AND hp.tersedia = 1`,
+        )
+        .get() as { n: number }
+    ).n,
+  );
+  return { unitTersedia, penjual };
 }
 
 /** Semua unit termasuk yang menunggu review dan ditolak. Hanya untuk admin. */

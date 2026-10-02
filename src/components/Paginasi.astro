@@ -17,9 +17,8 @@ const tautan = (n: number) => {
   if (cari) p.set('cari', cari);
   if (lapak) p.set('lapak', lapak);
   p.set('halaman', String(n));
-  // Query string sungguhan supaya server_render ulang; fragment cuma untuk
-  // menggulir ke katalog.
-  return `?${p.toString()}#katalog`;
+  // Query sungguhan supaya server merender ulang halaman katalog.
+  return `?${p.toString()}`;
 };
 
 const sekitar: number[] = [];

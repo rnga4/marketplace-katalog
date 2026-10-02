@@ -1,161 +1,117 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { katalogUnit, listLapakTayang, ambilSite } from '../lib/db';
-import { linkWa } from '../data/site';
-import UnitHpCard from '../components/UnitHpCard.astro';
-import Paginasi from '../components/Paginasi.astro';
+import {
+  ambilSite,
+  listLapakTersedia,
+  listPengumuman,
+  statistikRingkas,
+} from '../lib/db';
+import { linkWa, inisial } from '../data/site';
 
 const q = Astro.url.searchParams;
-const cari = (q.get('cari') ?? '').trim().slice(0, 80);
-const lapak = (q.get('lapak') ?? '').trim().slice(0, 80);
-const halaman = Number.parseInt(q.get('halaman') ?? '1', 10) || 1;
 
-const hasil = katalogUnit({ cari, lapak, halaman });
-const sellerTersedia = listLapakTayang();
+// Tautan lama sebelum katalog pindah ke halamannya sendiri.
+if (q.has('cari') || q.has('lapak') || q.has('halaman')) {
+  return Astro.redirect(`/katalog?${q.toString()}`, 301);
+}
+
 const site = ambilSite();
 const waUmum = linkWa(undefined, site.whatsapp, site.nama);
-const sellerDipilih = sellerTersedia.find((l) => l.slug === lapak) ?? null;
-const adaFilter = cari !== '' || lapak !== '';
-
-// Kartu katalog tidak punya penanda "Terjual" (lihat DESIGN.md), jadi katalog
-// publik hanya menampilkan unit yang masih tersedia.
+const stat = statistikRingkas();
+const lapak = listLapakTersedia();
+// Beranda cuma menampilkan info terbaru. Arsip lengkap cukup di panel admin.
+const pengumuman = listPengumuman(true).slice(0, 4);
 ---
 
 <BaseLayout tombolWa={false}>
   <section class="seks-luas mx-auto max-w-5xl px-4 sm:px-6">
-    <div class="grid gap-8 border-b border-garis pb-10 md:grid-cols-[1.4fr_1fr] md:gap-12">
-      <div class="flex flex-col gap-4">
-        <h1 class="judul-hero text-stone-900">
-          {
-            sellerDipilih
-              ? `Katalog ${sellerDipilih.nama}`
-              : 'HP bekas yang kondisinya dipasang apa adanya.'
-          }
-        </h1>
-        <p class="max-w-xl text-base text-stone-600 prosa">
-          {site.tagline} Setiap unit ditulis detail: kondisi fisik, baterai, dan kekurangannya.
-          Cek halaman unit lalu tanya lewat WhatsApp.
-        </p>
-      </div>
-      <div class="flex flex-col justify-end gap-3 md:text-right">
-        {
-          !adaFilter && (
-            <p class="text-sm text-stone-600">
-              {hasil.total} unit tersedia dari {sellerTersedia.length + 1} penjual.
-            </p>
-          )
-        }
-        {
-          waUmum && (
-            <a
-              href={waUmum}
-              class="target-sentuh inline-flex w-full items-center justify-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800 md:w-auto"
-            >
-              Tanya stok terbaru
-            </a>
-          )
-        }
+    <div class="flex max-w-2xl flex-col gap-5">
+      <h1 class="judul-hero text-stone-900">{site.tagline}</h1>
+      <p class="text-base text-stone-600 prosa">
+        HP bekas dari toko ini dan penjual yang mendaftar. Tiap unit ditulis apa adanya:
+        kondisi fisik, baterai, dan kekurangannya. Tanya lewat WhatsApp kalau ada yang cocok.
+      </p>
+      <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <a
+          href="/katalog"
+          class="target-sentuh inline-flex items-center rounded-md bg-aksi px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
+        >
+          Lihat katalog
+        </a>
+        {waUmum && (
+          <a
+            href={waUmum}
+            class="target-sentuh inline-flex items-center px-1 text-sm font-medium text-aksi-teks underline"
+          >
+            Tanya stok terbaru
+          </a>
+        )}
       </div>
     </div>
   </section>
 
-  <section id="katalog" class="seks-luas mx-auto max-w-5xl px-4 sm:px-6">
-    <div class="mb-6 flex flex-col gap-4">
-      <div>
-        <h2 class="kepala-seksi text-stone-900">Katalog</h2>
-        <p class="text-sm text-stone-600">
-          {
-            adaFilter
-              ? `${hasil.total} unit tersedia cocok dengan filter ini.`
-              : 'Paling murah dulu. Label kondisi tiap unit dijelaskan di halaman detailnya.'
-          }
-        </p>
+  <section class="seks-rapat mx-auto max-w-5xl px-4 sm:px-6" aria-label="Ringkasan katalog">
+    <dl class="grid grid-cols-2 divide-x divide-garis border-y border-garis">
+      <div class="px-4 py-5 sm:px-6">
+        <dt class="text-sm text-stone-600">Unit tersedia</dt>
+        <dd class="mt-1 text-2xl font-bold text-stone-900">{stat.unitTersedia}</dd>
       </div>
+      <div class="px-4 py-5 sm:px-6">
+        <dt class="text-sm text-stone-600">Penjual</dt>
+        <dd class="mt-1 text-2xl font-bold text-stone-900">{stat.penjual}</dd>
+      </div>
+    </dl>
+  </section>
 
-      <form method="get" action="/#katalog" class="flex flex-col gap-3 sm:flex-row">
-        <div class="flex-1">
-          <label for="cari" class="sr-only">Cari unit</label>
-          <input
-            id="cari"
-            type="search"
-            name="cari"
-            value={cari}
-            maxlength="80"
-            placeholder="Cari nama, merek, atau storage"
-            class="target-sentuh w-full rounded-md border border-stone-300 bg-dasar px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 focus:border-aksi-teks focus:outline-none"
-          />
-        </div>
-        <div class="sm:w-56">
-          <label for="lapak" class="sr-only">Saring penjual</label>
-          <select
-            id="lapak"
-            name="lapak"
-            class="target-sentuh w-full rounded-md border border-stone-300 bg-dasar px-3 py-2.5 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
-          >
-            <option value="">Semua penjual</option>
-            {sellerTersedia.map((l) => (
-              <option value={l.slug} selected={l.slug === lapak}>
-                {l.nama} ({l.jumlah})
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="submit"
-          class="target-sentuh rounded-md border border-stone-300 bg-dasar px-5 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-100"
-        >
-          Terapkan
-        </button>
-      </form>
-
-      {
-        adaFilter && (
-          <p class="text-sm text-stone-600">
-            <a href="/#katalog" class="target-sentuh text-aksi-teks inline-flex items-center underline">
-              Hapus filter
-            </a>
-          </p>
-        )
-      }
+  <section class="seks-rapat mx-auto max-w-5xl px-4 sm:px-6">
+    <div class="mb-5">
+      <h2 class="kepala-seksi text-stone-900">Penjual</h2>
+      <p class="text-sm text-stone-600">Lapak yang punya unit siap dilihat saat ini.</p>
     </div>
 
     {
-      hasil.unit.length > 0 ? (
-        <>
-          <div class="grid grid-cols-2 gap-0 border-t border-l border-garis md:grid-cols-3 lg:grid-cols-4">
-            {hasil.unit.map((unit, i) => (
-              <UnitHpCard unit={unit} urut={i} penjualNama={unit.penjualNama} />
-            ))}
-          </div>
-          <Paginasi
-            halaman={hasil.halaman}
-            jumlahHalaman={hasil.jumlahHalaman}
-            cari={cari}
-            lapak={lapak}
-          />
-        </>
+      lapak.length > 0 ? (
+        <ul class="grid border-t border-l border-garis sm:grid-cols-2 lg:grid-cols-3">
+          {lapak.map((l) => (
+            <li>
+              <a
+                href={`/lapak/${l.slug}`}
+                class="target-sentuh flex items-center gap-3 border-r border-b border-garis px-4 py-4 hover:bg-stone-100"
+              >
+                <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-stone-900 text-sm font-bold text-white">
+                  {inisial(l.nama)}
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-semibold text-stone-900">{l.nama}</span>
+                  <span class="block text-sm text-stone-600">{l.jumlah} unit tersedia</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
       ) : (
-        <div class="rounded-md border border-garis bg-stone-100 p-10 text-center">
-          <p class="font-semibold text-stone-900">
-            {adaFilter ? 'Tidak ada unit yang cocok.' : 'Belum ada unit yang tayang.'}
-          </p>
-          <p class="mt-1 text-sm text-stone-600">
-            {
-              adaFilter
-                ? 'Coba kata kunci lain, atau saring semua penjual.'
-                : 'Semua unit sedang habis atau belum ditinjau.'
-            }
-          </p>
-          {adaFilter && (
-            <a
-              href="/#katalog"
-              class="target-sentuh mt-4 inline-flex items-center rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-100"
-            >
-              Hapus filter
-            </a>
-          )}
-        </div>
+        <p class="rounded-md border border-garis bg-stone-100 px-4 py-8 text-center text-sm text-stone-600">
+          Belum ada lapak penjual yang punya unit tersedia. Coba lihat katalog toko ini.
+        </p>
       )
     }
   </section>
+
+  {
+    pengumuman.length > 0 && (
+      <section class="seks-rapat mx-auto max-w-5xl px-4 sm:px-6">
+        <div class="mb-5">
+          <h2 class="kepala-seksi text-stone-900">Pengumuman</h2>
+        </div>
+        <ul class="flex flex-col divide-y divide-garis border-y border-garis">
+          {pengumuman.map((p) => (
+            <li class="py-5">
+              <h3 class="font-semibold text-stone-900">{p.judul}</h3>
+              <p class="mt-1 text-sm text-stone-700 whitespace-pre-line">{p.isi}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
 </BaseLayout>

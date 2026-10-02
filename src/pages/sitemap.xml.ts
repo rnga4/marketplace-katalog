@@ -17,6 +17,7 @@ export const GET: APIRoute = ({ site }) => {
   // pencarian, bukan cuma lewat katalog.
   const pages = [
     '',
+    '/katalog',
     ...listUnits().map((u) => `/hp/${u.slug}`),
     ...listLapakTayang().map((l) => `/lapak/${l.slug}`),
   ];

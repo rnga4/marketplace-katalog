@@ -1,0 +1,239 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import {
+  listPengumuman,
+  ambilPengumuman,
+  simpanPengumuman,
+  setPengumumanAktif,
+  hapusPengumuman,
+  MAKS_JUDUL_PENGUMUMAN,
+  MAKS_ISI_PENGUMUMAN,
+} from '../../lib/db';
+import { bacaSesi } from '../../lib/auth';
+import { cekCsrf, teksForm, checkboxOn, NOTIF } from '../../lib/forms';
+
+const sesi = bacaSesi(Astro.cookies);
+const csrf = sesi?.csrf ?? '';
+
+let galat: string | null = null;
+let nilaiTerkirim: { id: number; judul: string; isi: string; aktif: boolean } | null = null;
+const notif = Astro.url.searchParams.get('notif');
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  if (!cekCsrf(fd, sesi)) {
+    return Astro.redirect('/admin/pengumuman?notif=salahfasilitas');
+  }
+
+  const aksi = teksForm(fd, 'aksi');
+  const id = Number.parseInt(teksForm(fd, 'id'), 10) || 0;
+
+  if (aksi === 'hapus') {
+    if (id && ambilPengumuman(id)) hapusPengumuman(id);
+    return Astro.redirect('/admin/pengumuman?notif=pengumumanhapus');
+  }
+
+  if (aksi === 'aktif') {
+    const p = id ? ambilPengumuman(id) : null;
+    if (p) setPengumumanAktif(id, !p.aktif);
+    return Astro.redirect('/admin/pengumuman?notif=pengumumanstatus');
+  }
+
+  const judul = teksForm(fd, 'judul');
+  const isi = teksForm(fd, 'isi');
+  const aktif = checkboxOn(fd, 'aktif');
+  nilaiTerkirim = { id, judul, isi, aktif };
+
+  if (!judul) {
+    galat = 'Judul pengumuman tidak boleh kosong.';
+  } else if (judul.length > MAKS_JUDUL_PENGUMUMAN) {
+    galat = `Judul maksimal ${MAKS_JUDUL_PENGUMUMAN} huruf.`;
+  } else if (!isi) {
+    galat = 'Isi pengumuman tidak boleh kosong.';
+  } else if (isi.length > MAKS_ISI_PENGUMUMAN) {
+    galat = `Isi pengumuman maksimal ${MAKS_ISI_PENGUMUMAN} huruf.`;
+  } else {
+    simpanPengumuman({ id: id || undefined, judul, isi, aktif });
+    return Astro.redirect('/admin/pengumuman?notif=pengumumansimpan');
+  }
+}
+
+const mintaEdit = Number.parseInt(Astro.url.searchParams.get('edit') ?? '', 10) || 0;
+const mintaHapus = Number.parseInt(Astro.url.searchParams.get('hapus') ?? '', 10) || 0;
+const akanHapus = mintaHapus ? ambilPengumuman(mintaHapus) : null;
+const sedangEdit = mintaEdit ? ambilPengumuman(mintaEdit) : null;
+
+const nilai =
+  nilaiTerkirim ?? sedangEdit ?? { id: 0, judul: '', isi: '', aktif: true };
+
+const daftar = listPengumuman();
+const infoNotif = galat ? { jenis: 'err' as const, teks: galat } : notif ? NOTIF[notif] ?? null : null;
+
+const input =
+  'target-sentuh w-full rounded-md border border-stone-300 bg-dasar px-3 py-2 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none';
+const spanLabel = 'text-sm font-medium text-stone-900';
+const bantuan = 'text-xs text-stone-600';
+---
+
+<AdminLayout title="Pengumuman" notif={infoNotif}>
+  <header class="mb-6">
+    <h1 class="text-xl font-bold tracking-tight text-stone-900">Pengumuman</h1>
+    <p class="text-sm text-stone-600">
+      Info ini tampil di beranda. Yang tidak aktif disimpan tanpa ditampilkan, supaya
+      pengumuman lama tidak perlu dihapus kalau mau dipakai lagi.
+    </p>
+  </header>
+
+  <form method="post" action="/admin/pengumuman" class="mb-10 flex max-w-2xl flex-col gap-4">
+    <input type="hidden" name="csrf" value={csrf} />
+    <input type="hidden" name="aksi" value="simpan" />
+    <input type="hidden" name="id" value={nilai.id} />
+
+    <label class="flex flex-col gap-1.5">
+      <span class={spanLabel}>Judul <b class="text-red-800">*</b></span>
+      <input
+        name="judul"
+        required
+        maxlength={MAKS_JUDUL_PENGUMUMAN}
+        value={nilai.judul}
+        placeholder="Contoh: Toko tutup 3 hari"
+        class={input}
+      />
+    </label>
+
+    <label class="flex flex-col gap-1.5">
+      <span class={spanLabel}>Isi <b class="text-red-800">*</b></span>
+      <textarea
+        name="isi"
+        required
+        rows="4"
+        maxlength={MAKS_ISI_PENGUMUMAN}
+        placeholder="Tulis kabar atau informasi untuk pembaca beranda."
+        class={input}
+      >{nilai.isi}</textarea>
+      <span class={bantuan}>Baris baru tetap dipertahankan saat ditampilkan.</span>
+    </label>
+
+    <label class="target-sentuh flex items-center gap-2.5">
+      <input type="checkbox" name="aktif" value="on" checked={nilai.aktif} class="size-4" />
+      <span class="text-sm text-stone-900">Tampilkan di beranda</span>
+    </label>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button
+        type="submit"
+        class="target-sentuh inline-flex items-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800"
+      >
+        {nilai.id ? 'Simpan perubahan' : 'Tambah pengumuman'}
+      </button>
+      {nilai.id && (
+        <a
+          href="/admin/pengumuman"
+          class="target-sentuh inline-flex items-center rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-100"
+        >
+          Batal
+        </a>
+      )}
+    </div>
+  </form>
+
+  {
+    akanHapus && (
+      <div
+        id="konfirmasi-hapus"
+        class="mb-6 rounded-md border border-red-700 bg-red-50 px-4 py-4"
+        role="alert"
+      >
+        <p class="text-sm font-semibold text-red-900">Hapus “{akanHapus.judul}”?</p>
+        <p class="mt-1 text-sm text-red-800">Pengumuman yang dihapus tidak bisa dikembalikan.</p>
+        <div class="mt-3 flex gap-3">
+          <form method="post" action="/admin/pengumuman">
+            <input type="hidden" name="csrf" value={csrf} />
+            <input type="hidden" name="aksi" value="hapus" />
+            <input type="hidden" name="id" value={akanHapus.id} />
+            <button
+              type="submit"
+              class="target-sentuh inline-flex items-center rounded-md bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800"
+            >
+              Ya, hapus
+            </button>
+          </form>
+          <a
+            href="/admin/pengumuman"
+            class="target-sentuh inline-flex items-center rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-100"
+          >
+            Batal
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  <h2 class="mb-3 text-base font-bold text-stone-900">
+    {daftar.length > 0 ? `${daftar.length} pengumuman` : 'Pengumuman'}
+  </h2>
+
+  {
+    daftar.length === 0 ? (
+      <div class="rounded-md border border-garis bg-stone-100 p-10 text-center">
+        <p class="font-semibold text-stone-900">Belum ada pengumuman.</p>
+        <p class="mt-1 text-sm text-stone-600">Tulis yang pertama lewat formulir di atas.</p>
+      </div>
+    ) : (
+      <ul class="flex flex-col divide-y divide-garis border-y border-garis">
+        {daftar.map((p) => (
+          <li class="py-4">
+            <div class="flex flex-wrap items-start gap-x-4 gap-y-3">
+              <div class="min-w-48 flex-1">
+                <p class="font-semibold text-stone-900">{p.judul}</p>
+                <p class="mt-1 text-sm text-stone-600 whitespace-pre-line">{p.isi}</p>
+              </div>
+              <span
+                class={`rounded-md border border-garis bg-stone-100 px-2 py-0.5 text-xs font-semibold ${p.aktif ? 'text-aksi-teks' : 'text-stone-600'}`}
+              >
+                {p.aktif ? 'Tayang' : 'Nonaktif'}
+              </span>
+              <div class="flex w-full items-center gap-2 sm:w-auto">
+                <a
+                  href={`/admin/pengumuman?edit=${p.id}`}
+                  class="target-sentuh inline-flex flex-1 items-center justify-center rounded-md border border-stone-300 px-3 text-xs font-semibold text-stone-900 hover:bg-stone-100 sm:flex-none"
+                >
+                  Edit
+                </a>
+                <form method="post" action="/admin/pengumuman" class="flex-1 sm:flex-none">
+                  <input type="hidden" name="csrf" value={csrf} />
+                  <input type="hidden" name="aksi" value="aktif" />
+                  <input type="hidden" name="id" value={p.id} />
+                  <button
+                    type="submit"
+                    class="target-sentuh inline-flex w-full items-center justify-center rounded-md border border-stone-300 px-3 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+                  >
+                    {p.aktif ? 'Nonaktifkan' : 'Tampilkan'}
+                  </button>
+                </form>
+                <a
+                  href={`/admin/pengumuman?hapus=${p.id}`}
+                  class="target-sentuh inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-3 text-xs font-semibold text-red-800 hover:border-red-700 hover:bg-red-50 sm:flex-none"
+                >
+                  Hapus
+                </a>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</AdminLayout>
+
+{
+  akanHapus && (
+    <script>
+      const panel = document.getElementById('konfirmasi-hapus');
+      if (panel) {
+        panel.scrollIntoView({ block: 'center' });
+        panel.querySelector('button')?.focus();
+      }
+    </script>
+  )
+}

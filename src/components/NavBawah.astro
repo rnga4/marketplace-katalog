@@ -9,7 +9,7 @@ const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
 const seller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 
 const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
-const diDetail = path.startsWith('/hp/');
+const diKatalog = path === '/katalog' || path.startsWith('/hp/') || path.startsWith('/lapak/');
 const diKelola = path.startsWith('/admin');
 const diAkun = path === '/masuk' || path === '/daftar' || path.startsWith('/akun');
 
@@ -21,12 +21,12 @@ type Tab = {
   aktif?: boolean;
 };
 
-/* Dua tab pertama menunjuk ke satu dokumen yang sama: Beranda ke bagian atas
-   halaman, Katalog ke grid di bawahnya. Karena itu tab aktif ikut bergeser
-   waktu digulir, bukan ditentukan sekali di server. */
+/* Beranda dan Katalog sekarang halaman terpisah, jadi tab aktif ditentukan
+   sekali dari path di server: tidak perlu lagi mengikuti posisi gulir. Detail
+   unit dan halaman lapak masih bagian dari alur katalog. */
 const TABS: Tab[] = [
-  { key: 'beranda', label: 'Beranda', href: '/', ikon: 'rumah', aktif: !diDetail },
-  { key: 'katalog', label: 'Katalog', href: '/#katalog', ikon: 'katalog', aktif: diDetail },
+  { key: 'beranda', label: 'Beranda', href: '/', ikon: 'rumah', aktif: path === '/' },
+  { key: 'katalog', label: 'Katalog', href: '/katalog', ikon: 'katalog', aktif: diKatalog },
 ];
 
 /* WhatsApp disembunyikan kalau nomor toko belum diisi, supaya tidak ada tab yang
@@ -104,24 +104,3 @@ if (admin) {
     }
   </ul>
 </nav>
-
-<script>
-  const nav = document.querySelector<HTMLElement>('.nav-bawah');
-  const bagian = document.getElementById('katalog');
-
-  /* `#katalog` cuma ada di Beranda, jadi sinkronisasi tab cuma perlu jalan di
-     situ. Di halaman detail, state aktif dari server sudah benar. */
-  if (nav && bagian) {
-    const beranda = nav.querySelector('[data-tab="beranda"]');
-    const katalog = nav.querySelector('[data-tab="katalog"]');
-    const garis = new IntersectionObserver(
-      ([masuk]) => {
-        if (!masuk) return;
-        beranda?.setAttribute('aria-current', masuk.isIntersecting ? 'false' : 'page');
-        katalog?.setAttribute('aria-current', masuk.isIntersecting ? 'page' : 'false');
-      },
-      { rootMargin: '-45% 0px -50% 0px' },
-    );
-    garis.observe(bagian);
-  }
-</script>

@@ -26,7 +26,7 @@ const wa = Astro.props.wa ?? linkWa(undefined, site.whatsapp, site.nama);
    tujuan tanpa alasan yang nyata: ruang di sini cukup. */
 const NAV = [
   { label: 'Beranda', href: '/' },
-  { label: 'Katalog', href: '/#katalog' },
+  { label: 'Katalog', href: '/katalog' },
 ] as const;
 
 /* Admin diarahkan ke panel kerjanya, seller ke produknya sendiri, dan
@@ -57,8 +57,8 @@ if (admin) {
     }
     {/* Di mobile linkan ini disembunyikan karena tujuan utamanya pindah ke bar
         bawah. Kalau tidak, logo + nav penuh akan melebihi lebar 360px. Beranda
-        dan Katalog juga menyatu ke satu dokumen, jadi cukup satu link ke
-        /#katalog tanpa tab aktif yang harus bergeser saat digulir. */}
+        dan Katalog sekarang halaman terpisah, jadi tiap link punya tujuan
+        sendiri tanpa tab aktif yang harus bergeser. */}
     <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
         {
           NAV.map((item) => (
