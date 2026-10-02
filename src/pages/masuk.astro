@@ -15,7 +15,10 @@ let galat: string | null = null;
 let info: string | null = null;
 
 if (Astro.url.searchParams.get('daftar') === '1') {
-  info = 'Akun berhasil dibuat. Silakan masuk dengan nomor WhatsApp dan kata sandi yang kamu daftarkan.';
+  info =
+    Astro.url.searchParams.get('tunggu') === '1'
+      ? 'Akunmu dibuat dan masuk daftar tunggu. Admin perlu menyetujuinya sebelum kamu bisa masuk.'
+      : 'Akun berhasil dibuat. Silakan masuk dengan nomor WhatsApp dan kata sandi yang kamu daftarkan.';
 }
 
 if (Astro.request.method === 'POST') {
@@ -33,7 +36,8 @@ if (Astro.request.method === 'POST') {
     const kunci: Kunci = nomor ? [`seller:ip:${ip}`, `seller:nomor:${nomor}`] : [`seller:ip:${ip}`];
     const dikunci = terkunci(kunci);
     const pengguna = !dikunci && nomor ? ambilPenggunaByNomor(nomor) : null;
-    const benar = !!pengguna && pengguna.status === 'aktif' && cekKataSandiPengguna(pengguna.id, sandi);
+    const sandiBenar = !!pengguna && cekKataSandiPengguna(pengguna.id, sandi);
+    const benar = sandiBenar && pengguna?.status === 'aktif';
     await sleep(450);
     if (benar && pengguna) {
       bersihkan(kunci);
@@ -48,10 +52,18 @@ if (Astro.request.method === 'POST') {
       });
       return Astro.redirect('/akun');
     } else {
-      if (!dikunci) catatGagal(kunci);
-      galat = dikunci
-        ? 'Terlalu banyak percobaan login. Coba lagi 15 menit lagi.'
-        : 'Nomor atau kata sandi salah, atau akun kamu ditangguhkan.';
+      // Kata sandi benar tapi akun belum/tidak disetujui bukan percobaan gagal,
+      // jadi jangan dihitung ke batas rate limit.
+      if (!dikunci && !sandiBenar) catatGagal(kunci);
+      if (dikunci) {
+        galat = 'Terlalu banyak percobaan login. Coba lagi 15 menit lagi.';
+      } else if (sandiBenar && pengguna?.status === 'tunggu') {
+        galat = 'Pendaftaranmu masih menunggu persetujuan admin. Coba lagi nanti.';
+      } else if (sandiBenar && pengguna?.status === 'tolak') {
+        galat = 'Pendaftaran akun ini ditolak. Hubungi admin kalau menurutmu ini keliru.';
+      } else {
+        galat = 'Nomor atau kata sandi salah, atau akun kamu ditangguhkan.';
+      }
     }
   }
 }

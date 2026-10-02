@@ -1,10 +1,6 @@
 ---
-import { ambilSite } from '../lib/db';
-import { linkWa } from '../data/site';
 import { bacaSesi, COOKIE_ADMIN, COOKIE_AKUN } from '../lib/auth';
 
-const site = ambilSite();
-const wa = linkWa(undefined, site.whatsapp, site.nama);
 const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
 const seller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 
@@ -17,7 +13,7 @@ type Tab = {
   key: string;
   label: string;
   href: string;
-  ikon: 'rumah' | 'katalog' | 'chat' | 'roda' | 'orang';
+  ikon: 'rumah' | 'katalog' | 'roda' | 'orang';
   aktif?: boolean;
 };
 
@@ -29,11 +25,7 @@ const TABS: Tab[] = [
   { key: 'katalog', label: 'Katalog', href: '/katalog', ikon: 'katalog', aktif: diKatalog },
 ];
 
-/* WhatsApp disembunyikan kalau nomor toko belum diisi, supaya tidak ada tab yang
-   mengarah ke tujuan yang tidak bisa dipakai. */
-if (wa) TABS.push({ key: 'wa', label: 'WhatsApp', href: wa, ikon: 'chat' });
-
-/* Tab keempat selalu ada. Admin diarahkan ke panel Kelola karena itu tempat
+/* Tab terakhir selalu ada. Admin diarahkan ke panel Kelola karena itu tempat
    kerjanya; siapa pun selain itu, termasuk pengunjung yang belum masuk, melihat
    Akun. Pelanggan yang belum punya akun mendarat di halaman masuk. */
 if (admin) {
@@ -80,9 +72,6 @@ if (admin) {
                   <rect x="3.4" y="13.2" width="7.4" height="7.4" rx="0.7" />
                   <rect x="13.2" y="13.2" width="7.4" height="7.4" rx="0.7" />
                 </>
-              )}
-              {tab.ikon === 'chat' && (
-                <path d="M4.4 5.4h15.2A1.6 1.6 0 0 1 21.2 7v7.4a1.6 1.6 0 0 1-1.6 1.6H9.6L5 19.1v-2.9h-.6A1.6 1.6 0 0 1 2.8 14.6V7a1.6 1.6 0 0 1 1.6-1.6Z" />
               )}
               {tab.ikon === 'orang' && (
                 <>

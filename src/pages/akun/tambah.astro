@@ -1,7 +1,7 @@
 ---
 import AkunLayout from '../../layouts/AkunLayout.astro';
 import UnitForm from '../../components/admin/UnitForm.astro';
-import { getUnit, createUnit } from '../../lib/db';
+import { getUnit, createUnit, ambilAutoAcc } from '../../lib/db';
 import { bacaSesi, COOKIE_AKUN } from '../../lib/auth';
 import { cekCsrf } from '../../lib/forms';
 import { unitDariForm, slugDariForm, prosesFotoUpload, saringFoto } from '../../lib/formUnit';
@@ -9,6 +9,7 @@ import { unitDariForm, slugDariForm, prosesFotoUpload, saringFoto } from '../../
 const pengguna = Astro.locals.pengguna!;
 const sesi = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 const csrf = sesi?.csrf ?? '';
+const autoAcc = ambilAutoAcc();
 
 let galat: string | null = null;
 let nilaiForm: Partial<import('../../lib/db').UnitHp> | undefined = undefined;
@@ -43,9 +44,18 @@ if (Astro.request.method === 'POST') {
   <header class="mb-6">
     <h1 class="text-xl font-bold tracking-tight text-stone-900">Tambah produk</h1>
     <p class="mt-1 text-sm text-stone-600">
-      Produk dikirim ke antrean peninjauan dulu. Baru tayang setelah disetujui admin.
+      {
+        autoAcc
+          ? 'Terima otomatis menyala, jadi produkmu langsung tayang begitu disimpan.'
+          : 'Produk dikirim ke antrean peninjauan dulu. Baru tayang setelah disetujui admin.'
+      }
     </p>
   </header>
 
-  <UnitForm csrf={csrf} action="/akun/tambah" tombolLabel="Kirim untuk ditinjau" nilai={nilaiForm} />
+  <UnitForm
+    csrf={csrf}
+    action="/akun/tambah"
+    tombolLabel={autoAcc ? 'Terbitkan produk' : 'Kirim untuk ditinjau'}
+    nilai={nilaiForm}
+  />
 </AkunLayout>

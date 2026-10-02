@@ -713,10 +713,15 @@ export function createPengguna(p: {
   const nomor = normalisasiWa(p.nomor);
   if (!waValid(nomor)) throw new Error('Nomor WhatsApp tidak valid.');
   if (adaPengguna(nomor)) throw new Error('Nomor ini sudah dipakai akun lain. Satu seller satu nomor, satu akun.');
+  const peran = p.peran ?? 'seller';
+  // Auto-acc menyala berarti seller baru langsung bisa masuk. Kalau mati, akun
+  // menunggu persetujuan admin supaya tidak ada orang asing yang langsung bisa
+  // memasang produk tanpa dilihat.
+  const status = peran === 'admin' || ambilAutoAcc() ? 'aktif' : 'tunggu';
   db.prepare(
     `INSERT INTO pengguna (nomor, nama, kata_sandi, peran, status, dibuat_pada)
-     VALUES (?, ?, ?, ?, 'aktif', ?)`,
-  ).run(nomor, p.nama.trim(), hashKataSandi(p.kataSandi), p.peran ?? 'seller', Date.now());
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  ).run(nomor, p.nama.trim(), hashKataSandi(p.kataSandi), peran, status, Date.now());
   const dibuat = ambilPenggunaByNomor(nomor);
   if (!dibuat) throw new Error('Gagal menyimpan akun.');
   return dibuat;
@@ -739,6 +744,31 @@ export function ambilPengguna(id: number): Pengguna | null {
 
 export function adaPengguna(nomor: string): boolean {
   return db.prepare('SELECT 1 FROM pengguna WHERE nomor = ?').get(normalisasiWa(nomor)) !== undefined;
+}
+
+/* ----- Persetujuan seller ----- */
+
+/** Seller yang mendaftar saat auto-acc mati, menunggu diputuskan admin. */
+export function listSellerMenunggu(): Pengguna[] {
+  return db
+    .prepare(
+      "SELECT id, nomor, nama, peran, status, dibuat_pada FROM pengguna WHERE peran = 'seller' AND status = 'tunggu' ORDER BY dibuat_pada ASC",
+    )
+    .all()
+    .map((r) => barisKePengguna(r as Record<string, unknown>))
+    .filter((p): p is Pengguna => p !== null);
+}
+
+export function jumlahSellerMenunggu(): number {
+  const row = db
+    .prepare("SELECT COUNT(*) AS n FROM pengguna WHERE peran = 'seller' AND status = 'tunggu'")
+    .get() as { n?: number } | undefined;
+  return Number(row?.n ?? 0);
+}
+
+/** Setujui (aktif) atau tolak (tolak) akun seller. Hanya menyentuh peran seller. */
+export function setStatusSeller(id: number, status: 'aktif' | 'tolak'): void {
+  db.prepare("UPDATE pengguna SET status = ? WHERE id = ? AND peran = 'seller'").run(status, id);
 }
 
 /** Cocokkan kata sandi seller. Hash yang rusak dianggap gagal, bukan error. */
@@ -864,9 +894,34 @@ export interface UnitInput {
   pemilikId?: number | null;
 }
 
+/* ----- Auto-acc ----- */
+
+const KUNCI_AUTO_ACC = 'auto_acc';
+
+/**
+ * Saklar global: saat menyala, unit seller langsung tayang dan pendaftaran seller
+ * baru langsung aktif. Bawaannya mati supaya tidak ada produk atau akun yang masuk
+ * katalog tanpa dilihat admin. Disimpan sebagai baris pengaturan terpisah, bukan
+ * bagian blob identitas toko, karena bukan data yang diisi dari formulir.
+ */
+export function ambilAutoAcc(): boolean {
+  const row = db.prepare('SELECT nilai FROM pengaturan WHERE kunci = ?').get(KUNCI_AUTO_ACC) as
+    | { nilai?: string }
+    | undefined;
+  return row?.nilai === '1';
+}
+
+export function simpanAutoAcc(on: boolean): void {
+  db.prepare(
+    `INSERT INTO pengaturan (kunci, nilai) VALUES (?, ?)
+     ON CONFLICT(kunci) DO UPDATE SET nilai = excluded.nilai`,
+  ).run(KUNCI_AUTO_ACC, on ? '1' : '0');
+}
+
 /**
  * Status moderasi tidak pernah datang dari formulir; status diturunkan dari
- * siapa pemiliknya. Unit admin tayang langsung, unit seller masuk antrean.
+ * siapa pemiliknya. Unit admin tayang langsung. Unit seller masuk antrean, kecuali
+ * saat auto-acc menyala.
  *
  * Setiap edit pada unit seller, termasuk yang sebelumnya ditolak, mengembalikannya
  * ke antrean dan menghapus alasan penolakan lama. Kalau tidak begitu, seller yang
@@ -874,7 +929,8 @@ export interface UnitInput {
  * dan produknya menggantung tak tayang sampai admin menekan Terima secara manual.
  */
 function moderasiSetelahUbah(pemilikId: number | null): Moderasi {
-  return pemilikId === null ? 'tayang' : 'menunggu';
+  if (pemilikId === null) return 'tayang';
+  return ambilAutoAcc() ? 'tayang' : 'menunggu';
 }
 
 const INSERT = `
@@ -908,7 +964,7 @@ export function createUnit(slug: string, i: UnitInput): UnitHp {
     JSON.stringify(i.foto ?? []),
     i.imei ?? '',
     pemilikId,
-    pemilikId === null ? 'tayang' : 'menunggu',
+    moderasiSetelahUbah(pemilikId),
   );
   const unit = getUnit(slug);
   if (!unit) throw new Error('Gagal menyimpan unit.');

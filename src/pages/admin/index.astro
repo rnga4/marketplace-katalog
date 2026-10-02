@@ -4,6 +4,7 @@ import {
   listSemuaUnits,
   listAntrean,
   jumlahAntrean,
+  jumlahSellerMenunggu,
   getUnit,
   deleteUnit,
   setTersedia,
@@ -55,6 +56,7 @@ const penjual = new Map(
   ]),
 );
 const jmlAntrean = jumlahAntrean().menunggu;
+const jmlSeller = jumlahSellerMenunggu();
 const klik = hitungKlik(30);
 const mintaHapus = Astro.url.searchParams.get('hapus');
 const unitHapus = mintaHapus ? getUnit(mintaHapus) : null;
@@ -76,6 +78,20 @@ const waSiap = waValid(ambilSite().whatsapp);
           Isi sekarang
         </a>
       </div>
+    )
+  }
+
+  {
+    jmlSeller > 0 && (
+      <a
+        href="/admin/moderasi"
+        class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-700 bg-dasar px-4 py-3 hover:bg-amber-50"
+      >
+        <p class="text-sm text-stone-700">
+          <span class="font-semibold text-stone-900">{jmlSeller} seller baru</span> menunggu persetujuan akun.
+        </p>
+        <span class="text-sm font-semibold text-aksi-teks">Buka moderasi</span>
+      </a>
     )
   }
 

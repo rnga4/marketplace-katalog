@@ -38,7 +38,7 @@ if (Astro.request.method === 'POST') {
         const pengguna = createPengguna({ nomor: whatsapp, nama: namaToko, kataSandi: sandi });
         simpanLapak(pengguna.id, { nama: namaToko, whatsapp });
         Astro.cookies.set(COOKIE_AKUN, '', { path: '/', maxAge: 0 });
-        return Astro.redirect('/masuk?daftar=1');
+        return Astro.redirect(pengguna.status === 'aktif' ? '/masuk?daftar=1' : '/masuk?daftar=1&tunggu=1');
       } catch (err) {
         galat = err instanceof Error ? err.message : 'Gagal membuat akun.';
       }

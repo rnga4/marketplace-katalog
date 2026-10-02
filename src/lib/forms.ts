@@ -62,4 +62,7 @@ export const NOTIF: Record<string, { jenis: 'ok' | 'err'; teks: string }> = {
   pengumumansimpan: { jenis: 'ok', teks: 'Pengumuman disimpan.' },
   pengumumanhapus: { jenis: 'ok', teks: 'Pengumuman dihapus.' },
   pengumumanstatus: { jenis: 'ok', teks: 'Status pengumuman diperbarui.' },
+  autoacc: { jenis: 'ok', teks: 'Setelan terima otomatis diperbarui.' },
+  selleraktif: { jenis: 'ok', teks: 'Akun seller disetujui dan sekarang bisa masuk.' },
+  sellertolak: { jenis: 'ok', teks: 'Pendaftaran seller ditolak.' },
 };
