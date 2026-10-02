@@ -24,13 +24,13 @@ if (Astro.request.method === 'POST') {
     const ip = ipPengguna(Astro.request, Astro.clientAddress);
     const kunci: Kunci = [`admin:ip:${ip}`];
     const dikunci = terkunci(kunci);
-    const benar = !dikunci && cekKataSandi(teksForm(fd, 'kataSandi'));
+    const benar = !dikunci && (await cekKataSandi(teksForm(fd, 'kataSandi')));
     await sleep(450);
     if (benar) {
       bersihkan(kunci);
       const aman = cookieAman(Astro.request, Astro.url);
       Astro.cookies.set('hp_csrf', '', { path: '/', maxAge: 0 });
-      Astro.cookies.set(COOKIE_ADMIN, buatToken(admin!.id, 'admin', buatCsrf()), {
+      Astro.cookies.set(COOKIE_ADMIN, buatToken(admin!.id, 'admin', buatCsrf(), admin!.sesiVersi), {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',

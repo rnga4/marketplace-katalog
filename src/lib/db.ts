@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
 
 import seed from '../data/hp.json';
 import { SITE_AWAL, normalisasiWa, waValid, type Site } from '../data/site';
@@ -25,6 +25,8 @@ export interface Pengguna {
   peran: Peran;
   status: string;
   dibuatPada: number;
+  /** Naik tiap ganti sandi; token dengan versi lama otomatis ditolak. */
+  sesiVersi: number;
 }
 
 export interface Lapak {
@@ -232,6 +234,14 @@ if ((db.prepare('PRAGMA table_info(pengguna)').all() as { name: string }[]).some
 }
 
 /**
+ * Versi sesi per pengguna. Dinaikkan saat kata sandi diganti, sehingga token
+ * lama (mis. hasil curian) berhenti berlaku tanpa harus menghapus cookie.
+ */
+if (!(db.prepare('PRAGMA table_info(pengguna)').all() as { name: string }[]).some((c) => c.name === 'sesi_versi')) {
+  db.exec('ALTER TABLE pengguna ADD COLUMN sesi_versi INTEGER NOT NULL DEFAULT 0');
+}
+
+/**
  * Kolom pemilik ditambahkan satu per satu supaya database lama bisa naik
  * tanpa perlu dibangun ulang. Nullable karena unit lama belum punya seller;
  * unit milik admin sendiri bernilai null.
@@ -296,6 +306,11 @@ export function hitungKlik(hari = 30): Record<string, number> {
   return Object.fromEntries(rows.map((r) => [r.slug, Number(r.n)]));
 }
 
+/** Hapus riwayat klik sebuah unit saat unitnya dihapus. */
+export function hapusKlik(slug: string): void {
+  db.prepare('DELETE FROM klik WHERE slug = ?').run(slug);
+}
+
 export const LABEL_KONDISI: Record<Kondisi, string> = {
   mulus: 'Mulus',
   minus: 'Minus',
@@ -340,21 +355,26 @@ export function simpanPengumuman(input: {
 }): Pengumuman {
   const sekarang = Date.now();
   if (input.id) {
-    db.prepare('UPDATE pengumuman SET judul = ?, isi = ?, aktif = ?, diubah_pada = ? WHERE id = ?').run(
+    const hasil = db.prepare('UPDATE pengumuman SET judul = ?, isi = ?, aktif = ?, diubah_pada = ? WHERE id = ?').run(
       input.judul,
       input.isi,
       input.aktif ? 1 : 0,
       sekarang,
       input.id,
     );
-    return ambilPengumuman(input.id)!;
+    if (Number(hasil.changes) === 0) throw new Error('Pengumuman tidak ditemukan.');
+    const diubah = ambilPengumuman(input.id);
+    if (!diubah) throw new Error('Pengumuman tidak ditemukan.');
+    return diubah;
   }
   const hasil = db
     .prepare(
       'INSERT INTO pengumuman (judul, isi, aktif, dibuat_pada, diubah_pada) VALUES (?, ?, ?, ?, ?)',
     )
     .run(input.judul, input.isi, input.aktif ? 1 : 0, sekarang, sekarang);
-  return ambilPengumuman(Number(hasil.lastInsertRowid))!;
+  const baru = ambilPengumuman(Number(hasil.lastInsertRowid));
+  if (!baru) throw new Error('Gagal menyimpan pengumuman.');
+  return baru;
 }
 
 export function setPengumumanAktif(id: number, aktif: boolean): void {
@@ -698,6 +718,7 @@ function barisKePengguna(row: Record<string, unknown> | undefined): Pengguna | n
     peran: (row.peran === 'admin' ? 'admin' : 'seller') as Peran,
     status: nilaiTeks(row.status) || 'aktif',
     dibuatPada: integerNilai(row.dibuat_pada),
+    sesiVersi: integerNilai(row.sesi_versi),
   };
 }
 
@@ -718,6 +739,22 @@ function barisKeLapak(row: Record<string, unknown> | undefined): Lapak | null {
 function hashKataSandi(kataSandi: string): string {
   const salt = randomBytes(16).toString('hex');
   return `${salt}:${scryptSync(kataSandi, salt, 64, { N: SCRYPT_N }).toString('hex')}`;
+}
+
+/**
+ * Verifikasi memakai scrypt versi async. Versi sync memblokir event loop, jadi
+ * beberapa login serentak cukup untuk membuat seluruh situs berhenti merespons.
+ */
+function scryptUji(kataSandi: string, salt: string): Promise<Buffer> {
+  return new Promise((selesai, gagal) => {
+    scrypt(kataSandi, salt, 64, { N: SCRYPT_N }, (err, kunci) => {
+      if (err) {
+        gagal(err);
+      } else {
+        selesai(kunci);
+      }
+    });
+  });
 }
 
 /**
@@ -750,14 +787,14 @@ export function createPengguna(p: {
 
 export function ambilPenggunaByNomor(nomor: string): Pengguna | null {
   return barisKePengguna(
-    db.prepare('SELECT id, nomor, nama, peran, status, dibuat_pada FROM pengguna WHERE nomor = ?')
+    db.prepare('SELECT id, nomor, nama, peran, status, dibuat_pada, sesi_versi FROM pengguna WHERE nomor = ?')
       .get(normalisasiWa(nomor)) as Record<string, unknown> | undefined,
   );
 }
 
 export function ambilPengguna(id: number): Pengguna | null {
   return barisKePengguna(
-    db.prepare('SELECT id, nomor, nama, peran, status, dibuat_pada FROM pengguna WHERE id = ?').get(id) as
+    db.prepare('SELECT id, nomor, nama, peran, status, dibuat_pada, sesi_versi FROM pengguna WHERE id = ?').get(id) as
       | Record<string, unknown>
       | undefined,
   );
@@ -773,7 +810,7 @@ export function adaPengguna(nomor: string): boolean {
 export function listSellerMenunggu(): Pengguna[] {
   return db
     .prepare(
-      "SELECT id, nomor, nama, peran, status, dibuat_pada FROM pengguna WHERE peran = 'seller' AND status = 'tunggu' ORDER BY dibuat_pada ASC",
+      "SELECT id, nomor, nama, peran, status, dibuat_pada, sesi_versi FROM pengguna WHERE peran = 'seller' AND status = 'tunggu' ORDER BY dibuat_pada ASC",
     )
     .all()
     .map((r) => barisKePengguna(r as Record<string, unknown>))
@@ -793,7 +830,7 @@ export function setStatusSeller(id: number, status: 'aktif' | 'tolak'): void {
 }
 
 /** Cocokkan kata sandi seller. Hash yang rusak dianggap gagal, bukan error. */
-export function cekKataSandiPengguna(id: number, kataSandi: string): boolean {
+export async function cekKataSandiPengguna(id: number, kataSandi: string): Promise<boolean> {
   const row = db.prepare('SELECT kata_sandi FROM pengguna WHERE id = ?').get(id) as
     | { kata_sandi?: string }
     | undefined;
@@ -801,13 +838,21 @@ export function cekKataSandiPengguna(id: number, kataSandi: string): boolean {
   if (!simpan.includes(':')) return false;
   const [salt, hash] = simpan.split(':');
   if (!salt || !hash) return false;
-  const uji = scryptSync(kataSandi, salt, 64, { N: SCRYPT_N });
+  const uji = await scryptUji(kataSandi, salt);
   const asli = Buffer.from(hash, 'hex');
   return uji.length === asli.length && timingSafeEqual(uji, asli);
 }
 
+/**
+ * Ganti kata sandi seller. Versi sesi dinaikkan supaya token yang mungkin
+ * sudah bocor berhenti berlaku; perangkat yang sedang dipakai mendapat token
+ * baru dari pemanggil.
+ */
 export function setKataSandiPengguna(id: number, kataSandi: string): void {
-  db.prepare('UPDATE pengguna SET kata_sandi = ? WHERE id = ?').run(hashKataSandi(kataSandi), id);
+  db.prepare('UPDATE pengguna SET kata_sandi = ?, sesi_versi = sesi_versi + 1 WHERE id = ?').run(
+    hashKataSandi(kataSandi),
+    id,
+  );
 }
 
 /** Slug lapak unik; nama yang sama ditambahkan angka, bukan menolak pendaftaran. */
@@ -1059,17 +1104,18 @@ function simpanHash(hash: string): void {
 /**
  * Ganti kata sandi admin. Hash ditulis ke pengaturan (sumber yang dipakai
  * ensureKataSandi) dan ke baris akun admin, supaya keduanya tidak pernah
- * berbeda kalau nanti login admin ikut memakai tabel pengguna.
+ * berbeda kalau nanti login admin ikut memakai tabel pengguna. Versi sesi
+ * dinaikkan agar token admin lama berhenti berlaku.
  */
 export function setKataSandi(kataSandi: string): void {
   const salt = randomBytes(16).toString('hex');
   const hash = scryptSync(kataSandi, salt, 64, { N: SCRYPT_N }).toString('hex');
   const gabung = `${salt}:${hash}`;
   simpanHash(gabung);
-  db.prepare("UPDATE pengguna SET kata_sandi = ? WHERE peran = 'admin'").run(gabung);
+  db.prepare("UPDATE pengguna SET kata_sandi = ?, sesi_versi = sesi_versi + 1 WHERE peran = 'admin'").run(gabung);
 }
 
-export function cekKataSandi(kataSandi: string): boolean {
+export async function cekKataSandi(kataSandi: string): Promise<boolean> {
   const row = db.prepare('SELECT nilai FROM pengaturan WHERE kunci = ?').get(KUNCI_SANDI) as
     | Record<string, unknown>
     | undefined;
@@ -1077,7 +1123,7 @@ export function cekKataSandi(kataSandi: string): boolean {
   if (!simpan.includes(':')) return false;
   const [salt, hash] = simpan.split(':');
   if (!salt || !hash) return false;
-  const uji = scryptSync(kataSandi, salt, 64, { N: SCRYPT_N });
+  const uji = await scryptUji(kataSandi, salt);
   const asli = Buffer.from(hash, 'hex');
   return uji.length === asli.length && timingSafeEqual(uji, asli);
 }
@@ -1171,7 +1217,7 @@ export const NOMOR_ADMIN = 'admin';
 
 export function ambilAdmin(): Pengguna | null {
   return barisKePengguna(
-    db.prepare("SELECT id, nomor, nama, peran, status, dibuat_pada FROM pengguna WHERE peran = 'admin' ORDER BY id LIMIT 1")
+    db.prepare("SELECT id, nomor, nama, peran, status, dibuat_pada, sesi_versi FROM pengguna WHERE peran = 'admin' ORDER BY id LIMIT 1")
       .get() as Record<string, unknown> | undefined,
   );
 }
@@ -1221,6 +1267,24 @@ export function ambilSessionSecret(): string {
   ).run(KUNCI_SESSION_SECRET, secretBaru);
   return secretBaru;
 }
+
+/* ----- Pemangkasan tabel yang terus tumbuh ----- */
+
+/**
+ * Riwayat klik disimpan untuk statistik 30 hari, jadi 90 hari sudah lebih dari
+ * cukup. Baris percobaan rate limit yang sudah kedaluwarsa juga dibuang supaya
+ * tabelnya tidak tumbuh tanpa batas oleh IP yang terus berganti.
+ */
+const RETENSI_KLIK_HARI = 90;
+
+function pangkasLama(): void {
+  db.prepare('DELETE FROM klik WHERE ts < ?').run(Date.now() - RETENSI_KLIK_HARI * 86_400_000);
+  db.prepare('DELETE FROM percobaan WHERE buka < ?').run(Date.now());
+}
+
+pangkasLama();
+const timerPangkas = setInterval(pangkasLama, 6 * 60 * 60 * 1000);
+(timerPangkas as { unref?: () => void }).unref?.();
 
 /* ----- Seed: cuma jalan saat tabel masih kosong ----- */
 

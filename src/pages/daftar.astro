@@ -36,6 +36,8 @@ if (Astro.request.method === 'POST') {
         galat = 'Nomor WhatsApp tidak valid. Tulis seperti 0812 3456 7890.';
       } else if (sandi.length < 8) {
         galat = 'Kata sandi minimal 8 karakter.';
+      } else if (sandi.length > 200) {
+        galat = 'Kata sandi maksimal 200 karakter.';
       } else if (adaPengguna(whatsapp)) {
         galat = 'Nomor ini sudah dipakai akun lain. Satu seller satu nomor, satu akun.';
       } else {

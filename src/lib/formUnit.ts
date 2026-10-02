@@ -1,4 +1,4 @@
-import { teksForm, daftarForm, checkboxOn, angkaForm, angkaAtauNull } from './forms';
+import { teksForm, daftarForm, checkboxOn, angkaForm, angkaAtauNull, slugValid } from './forms';
 import { simpanFoto } from './foto';
 import { slugify, type Kondisi, type UnitInput } from './db';
 
@@ -33,23 +33,25 @@ export function unitDariForm(fd: FormData): UnitInput {
 export async function slugDariForm(fd: FormData, nama: string, cekBentrok: (s: string) => boolean): Promise<string | null> {
   let slug = teksForm(fd, 'slug').toLowerCase();
   if (!slug) slug = slugify(nama);
-  if (!slug) return null;
-  // Slug dipakai sebagai nama file foto dan potongan URL, jadi hanya huruf kecil,
-  // angka, dan strip. Tanpa ini, slug berisi "/" atau ".." bisa menulis file di
-  // luar folder foto.
-  if (slug.length > 80 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(slug)) return null;
+  if (!slugValid(slug)) return null;
   if (cekBentrok(slug)) return null;
   return slug;
 }
 
+/** Batas jumlah foto baru per submit, supaya satu permintaan tidak menguras memori. */
+export const MAKS_FOTO_BARU = 10;
+
 /** Proses file upload, lalu tempel nama baru di akhir daftar foto. */
 export async function prosesFotoUpload(fd: FormData, slug: string, daftar: string[]): Promise<string[]> {
+  const files = (fd.getAll('fotoBaru') as File[]).filter(
+    (f) => f && 'size' in f && f.size > 0 && f.name,
+  );
+  if (files.length > MAKS_FOTO_BARU) {
+    throw new Error(`Maksimal ${MAKS_FOTO_BARU} foto baru sekaligus.`);
+  }
   const hasil = [...daftar];
-  const files = fd.getAll('fotoBaru') as File[];
   for (const file of files) {
-    if (file && 'size' in file && file.size > 0 && file.name) {
-      hasil.push(await simpanFoto(file, slug));
-    }
+    hasil.push(await simpanFoto(file, slug));
   }
   return hasil;
 }

@@ -17,6 +17,13 @@ export const LEBAR_THUMB = 400;
 
 const KUALITAS = 78;
 
+/**
+ * Batas ukuran satu file sebelum diproses. Nginx sudah membatasi total body
+ * (120m), tapi tanpa batas per file satu unggahan bisa menguras memori server
+ * saat sharp mendekode gambar yang sangat besar.
+ */
+export const MAKS_UKURAN_FOTO = 12 * 1024 * 1024;
+
 type Ukuran = 'thumb' | 'sedang' | 'besar' | 'og';
 type Varian = 't' | 'm' | 'og' | null;
 
@@ -83,6 +90,12 @@ async function olah(asal: Buffer, lebar: number): Promise<Buffer> {
  * besar, satu-satunya nama yang masuk ke DB.
  */
 export async function simpanFoto(file: File, slug: string): Promise<string> {
+  if (file.size > MAKS_UKURAN_FOTO) {
+    throw new Error('Ukuran foto terlalu besar. Maksimal 12 MB per file.');
+  }
+  if (file.type && !file.type.startsWith('image/')) {
+    throw new Error('File harus berupa gambar JPG, PNG, atau WebP.');
+  }
   const asal = Buffer.from(await file.arrayBuffer());
   if (kayaknyaHeic(asal)) {
     throw new Error(

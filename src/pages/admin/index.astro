@@ -6,7 +6,6 @@ import {
   jumlahAntrean,
   jumlahSellerMenunggu,
   getUnit,
-  deleteUnit,
   setTersedia,
   labelKondisi,
   LABEL_MODERASI,
@@ -15,7 +14,8 @@ import {
   hitungKlik,
 } from '../../lib/db';
 import { rupiah } from '../../lib/format';
-import { fotoSrc, hapusFoto } from '../../lib/foto';
+import { fotoSrc } from '../../lib/foto';
+import { hapusUnit } from '../../lib/hapusUnit';
 import { waValid } from '../../data/site';
 import { cekCsrf, teksForm, NOTIF } from '../../lib/forms';
 import { bacaSesi } from '../../lib/auth';
@@ -38,8 +38,7 @@ if (Astro.request.method === 'POST') {
       return Astro.redirect('/admin?notif=statusubah');
     }
     if (aksi === 'hapus' && unit) {
-      unit.foto.forEach(hapusFoto);
-      deleteUnit(slug);
+      hapusUnit(slug);
       return Astro.redirect('/admin?notif=terhapus');
     }
     return Astro.redirect('/admin');

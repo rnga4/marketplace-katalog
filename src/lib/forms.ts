@@ -41,6 +41,15 @@ export function cekCsrf(fd: FormData, sesi: Sesi | null): boolean {
   return teksForm(fd, 'csrf') === sesi?.csrf;
 }
 
+/**
+ * Slug dipakai sebagai nama file foto dan potongan URL, jadi hanya huruf kecil,
+ * angka, dan strip. Tanpa ini, slug berisi "/" atau ".." bisa menulis file di
+ * luar folder foto.
+ */
+export function slugValid(slug: string): boolean {
+  return slug.length > 0 && slug.length <= 80 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(slug);
+}
+
 export const PILIHAN_KONDISI = [
   { nilai: 'mulus', label: 'Mulus' },
   { nilai: 'minus', label: 'Minus' },

@@ -1,7 +1,7 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { setKataSandi, cekKataSandi } from '../../lib/db';
-import { bacaSesi } from '../../lib/auth';
+import { setKataSandi, cekKataSandi, ambilAdmin } from '../../lib/db';
+import { bacaSesi, buatToken, cookieAman, COOKIE_ADMIN } from '../../lib/auth';
 import { cekCsrf, teksForm } from '../../lib/forms';
 
 const sesi = bacaSesi(Astro.cookies);
@@ -15,14 +15,32 @@ if (Astro.request.method === 'POST') {
   const ulangi = teksForm(fd, 'kataSandiBaru2');
   if (!cekCsrf(fd, sesi)) {
     return Astro.redirect('/admin?notif=salahfasilitas');
-  } else if (!cekKataSandi(sekarang)) {
+  } else if (!(await cekKataSandi(sekarang))) {
     galat = 'Kata sandi saat ini salah.';
   } else if (baru.length < 8) {
     galat = 'Kata sandi baru minimal 8 karakter.';
+  } else if (baru.length > 200) {
+    galat = 'Kata sandi baru maksimal 200 karakter.';
   } else if (baru !== ulangi) {
     galat = 'Ulangi kata sandi tidak sama.';
   } else {
     setKataSandi(baru);
+    // Versi sesi admin naik; terbitkan token baru supaya sesi ini tetap hidup
+    // sementara token admin lama (mis. di perangkat lain) ikut dicabut.
+    const adminBaru = ambilAdmin();
+    if (adminBaru) {
+      Astro.cookies.set(
+        COOKIE_ADMIN,
+        buatToken(adminBaru.id, 'admin', sesi?.csrf ?? '', adminBaru.sesiVersi),
+        {
+          path: '/',
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: cookieAman(Astro.request, Astro.url),
+          maxAge: 7 * 24 * 60 * 60,
+        },
+      );
+    }
     return Astro.redirect('/admin?notif=sandiubah');
   }
 }

@@ -1,0 +1,35 @@
+---
+import '@fontsource-variable/plus-jakarta-sans';
+import '../styles/global.css';
+
+Astro.response.status = 500;
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Terjadi kesalahan</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+  </head>
+  <body class="bg-dasar font-sans text-stone-900 antialiased">
+    <main class="flex min-h-dvh flex-col items-center justify-center px-4 py-12 text-center">
+      <span class="flex size-10 items-center justify-center rounded-md bg-stone-900 font-sans text-sm font-bold text-white">
+        HP
+      </span>
+      <p class="mt-6 text-sm font-semibold uppercase tracking-wide text-aksi-teks">Kesalahan 500</p>
+      <h1 class="mt-2 text-2xl font-bold tracking-tight text-stone-900">Ada yang rusak di sisi kami</h1>
+      <p class="mt-2 max-w-sm text-sm text-stone-600">
+        Halaman ini gagal dimuat. Coba muat ulang sebentar lagi. Kalau masih sama, kembali ke beranda lewat tautan di bawah.
+      </p>
+      <a
+        href="/"
+        class="target-sentuh mt-6 inline-flex items-center justify-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800"
+      >
+        Ke beranda
+      </a>
+    </main>
+  </body>
+</html>

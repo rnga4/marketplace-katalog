@@ -1,7 +1,8 @@
 ---
 import AkunLayout from '../../layouts/AkunLayout.astro';
-import { bacaSesi, COOKIE_AKUN } from '../../lib/auth';
+import { bacaSesi, buatToken, buatCsrf, cookieAman, COOKIE_AKUN } from '../../lib/auth';
 import {
+  ambilPengguna,
   ambilLapak,
   cekKataSandiPengguna,
   setKataSandiPengguna,
@@ -47,14 +48,30 @@ if (Astro.request.method === 'POST') {
     const sekarang = teksForm(fd, 'kataSandi');
     const baru = teksForm(fd, 'kataSandiBaru');
     const ulangi = teksForm(fd, 'kataSandiBaru2');
-    if (!cekKataSandiPengguna(pengguna.id, sekarang)) {
+    if (!(await cekKataSandiPengguna(pengguna.id, sekarang))) {
       galat = 'Kata sandi saat ini salah.';
     } else if (baru.length < 8) {
       galat = 'Kata sandi baru minimal 8 karakter.';
+    } else if (baru.length > 200) {
+      galat = 'Kata sandi baru maksimal 200 karakter.';
     } else if (baru !== ulangi) {
       galat = 'Ulangi kata sandi tidak sama.';
     } else {
       setKataSandiPengguna(pengguna.id, baru);
+      // Versi sesi naik, jadi token lama tidak berlaku lagi. Terbitkan token
+      // baru untuk perangkat ini supaya seller tidak ikut terlempar keluar.
+      const segar = ambilPengguna(pengguna.id);
+      Astro.cookies.set(
+        COOKIE_AKUN,
+        buatToken(pengguna.id, 'seller', sesi?.csrf ?? buatCsrf(), segar?.sesiVersi ?? 0),
+        {
+          path: '/',
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: cookieAman(Astro.request, Astro.url),
+          maxAge: 7 * 24 * 60 * 60,
+        },
+      );
       return Astro.redirect('/akun/toko?notif=sandiberubah');
     }
   } else if (aksi === 'foto') {

@@ -53,8 +53,12 @@ if (Astro.request.method === 'POST') {
   } else if (isi.length > MAKS_ISI_PENGUMUMAN) {
     galat = `Isi pengumuman maksimal ${MAKS_ISI_PENGUMUMAN} huruf.`;
   } else {
-    simpanPengumuman({ id: id || undefined, judul, isi, aktif });
-    return Astro.redirect('/admin/pengumuman?notif=pengumumansimpan');
+    try {
+      simpanPengumuman({ id: id || undefined, judul, isi, aktif });
+      return Astro.redirect('/admin/pengumuman?notif=pengumumansimpan');
+    } catch (err) {
+      galat = err instanceof Error ? err.message : 'Gagal menyimpan pengumuman.';
+    }
   }
 }
 

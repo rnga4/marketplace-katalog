@@ -2,8 +2,8 @@ import type { APIRoute } from 'astro';
 import { COOKIE_AKUN } from '../../lib/auth';
 import { teksForm, cekCsrf } from '../../lib/forms';
 import { bacaSesi } from '../../lib/auth';
-import { getUnit, deleteUnit } from '../../lib/db';
-import { hapusFoto } from '../../lib/foto';
+import { getUnit } from '../../lib/db';
+import { hapusUnit } from '../../lib/hapusUnit';
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const sesi = bacaSesi(cookies, COOKIE_AKUN, 'seller');
@@ -16,8 +16,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
   // Milik orang lain tidak boleh dihapus hanya karena slug-nya diketahui.
   if (unit && unit.pemilikId === sesi.penggunaId) {
-    unit.foto.forEach(hapusFoto);
-    deleteUnit(slug);
+    hapusUnit(slug);
     return redirect('/akun?notif=terhapus');
   }
   return redirect('/akun');

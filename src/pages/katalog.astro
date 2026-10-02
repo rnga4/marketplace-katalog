@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { katalogUnit, listLapakTayang, ambilSite } from '../lib/db';
+import { katalogUnit, listLapakTersedia, ambilSite } from '../lib/db';
 import { linkWa } from '../data/site';
 import UnitHpCard from '../components/UnitHpCard.astro';
 import Paginasi from '../components/Paginasi.astro';
@@ -11,7 +11,7 @@ const lapak = (q.get('lapak') ?? '').trim().slice(0, 80);
 const halaman = Number.parseInt(q.get('halaman') ?? '1', 10) || 1;
 
 const hasil = katalogUnit({ cari, lapak, halaman });
-const sellerTersedia = listLapakTayang();
+const sellerTersedia = listLapakTersedia();
 const site = ambilSite();
 const waUmum = linkWa(undefined, site.whatsapp, site.nama);
 const sellerDipilih = sellerTersedia.find((l) => l.slug === lapak) ?? null;

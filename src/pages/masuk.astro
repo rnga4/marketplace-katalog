@@ -36,14 +36,14 @@ if (Astro.request.method === 'POST') {
     const kunci: Kunci = nomor ? [`seller:ip:${ip}`, `seller:nomor:${nomor}`] : [`seller:ip:${ip}`];
     const dikunci = terkunci(kunci);
     const pengguna = !dikunci && nomor ? ambilPenggunaByNomor(nomor) : null;
-    const sandiBenar = !!pengguna && cekKataSandiPengguna(pengguna.id, sandi);
+    const sandiBenar = !!pengguna && (await cekKataSandiPengguna(pengguna.id, sandi));
     const benar = sandiBenar && pengguna?.status === 'aktif';
     await sleep(450);
     if (benar && pengguna) {
       bersihkan(kunci);
       const aman = cookieAman(Astro.request, Astro.url);
       Astro.cookies.set('hp_csrf', '', { path: '/', maxAge: 0 });
-      Astro.cookies.set(COOKIE_AKUN, buatToken(pengguna.id, 'seller', buatCsrf()), {
+      Astro.cookies.set(COOKIE_AKUN, buatToken(pengguna.id, 'seller', buatCsrf(), pengguna.sesiVersi), {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',

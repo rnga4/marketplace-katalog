@@ -1,5 +1,5 @@
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
-import { ambilSessionSecret, type Peran } from './db';
+import { ambilSessionSecret, ambilPengguna, type Peran } from './db';
 
 /**
  * Sesi tanpa server sesi terpisah: token berisi identitas, peran, dan
@@ -33,6 +33,8 @@ export interface Sesi {
   penggunaId: number | null;
   peran: Peran;
   csrf: string;
+  /** Versi sesi pengguna saat token dibuat; token lama tidak berlaku setelah ganti sandi. */
+  versi: number;
 }
 
 /** Token seller dan admin sama bentuknya; peran ikut di dalamnya. */
@@ -40,9 +42,10 @@ export function buatToken(
   penggunaId: number,
   peran: Peran,
   csrf: string,
+  versi: number,
   ttlMs: number = LAMA_SESI,
 ): string {
-  const payload = `${penggunaId}.${peran}.${csrf}.${Date.now() + ttlMs}`;
+  const payload = `${penggunaId}.${peran}.${csrf}.${Date.now() + ttlMs}.${versi}`;
   return `${Buffer.from(payload).toString('base64url')}.${tanda(payload)}`;
 }
 
@@ -69,17 +72,21 @@ export function cekToken(token: string | undefined): Sesi | null {
     const [csrf, expStr] = bagian;
     const exp = Number(expStr);
     if (!csrf || !Number.isFinite(exp) || exp < Date.now()) return null;
-    return { penggunaId: null, peran: 'admin', csrf };
+    return { penggunaId: null, peran: 'admin', csrf, versi: 0 };
   }
 
-  if (bagian.length !== 4) return null;
-  const [idStr, peranStr, csrf, expStr] = bagian;
+  // Token versi lama tidak membawa versi sesi; anggap 0 supaya tetap sah sampai
+  // kata sandi diganti (yang menaikkan versi menjadi 1).
+  if (bagian.length !== 4 && bagian.length !== 5) return null;
+  const [idStr, peranStr, csrf, expStr, versiStr] = bagian;
   const penggunaId = Number(idStr);
   const exp = Number(expStr);
+  const versi = versiStr === undefined ? 0 : Number(versiStr);
   if (!Number.isInteger(penggunaId) || penggunaId <= 0) return null;
   if (peranStr !== 'admin' && peranStr !== 'seller') return null;
   if (!csrf || !Number.isFinite(exp) || exp < Date.now()) return null;
-  return { penggunaId, peran: peranStr, csrf };
+  if (!Number.isInteger(versi) || versi < 0) return null;
+  return { penggunaId, peran: peranStr, csrf, versi };
 }
 
 export interface PembacaCookie {
@@ -97,5 +104,11 @@ export function bacaSesi(
 ): Sesi | null {
   const sesi = cekToken(cookies.get(cookie)?.value);
   if (!sesi) return null;
-  return sesi.peran === peranDiminta ? sesi : null;
+  if (sesi.peran !== peranDiminta) return null;
+  // Token lama tanpa id tidak punya versi; biarkan sampai kedaluwarsa.
+  if (sesi.penggunaId !== null) {
+    const pengguna = ambilPengguna(sesi.penggunaId);
+    if (!pengguna || pengguna.sesiVersi !== sesi.versi) return null;
+  }
+  return sesi;
 }
