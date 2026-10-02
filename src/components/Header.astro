@@ -2,6 +2,7 @@
 import { ambilLapak, ambilSite } from '../lib/db';
 import { inisial, linkWa } from '../data/site';
 import { bacaSesi, COOKIE_ADMIN, COOKIE_AKUN } from '../lib/auth';
+import { fotoSrc } from '../lib/foto';
 import Kembali from './Kembali.astro';
 
 interface Props {
@@ -30,15 +31,13 @@ const NAV = [
 ] as const;
 
 /* Admin diarahkan ke panel kerjanya, seller ke produknya sendiri, dan
-   pengunjung yang belum masuk ke halaman masuk. Label seller memakai nama
-   tokonya supaya "/akun" terbaca sebagai tempat miliknya, bukan menu generik. */
-let akunNav: { label: string; href: string } = { label: 'Masuk', href: '/masuk' };
-if (admin) {
-  akunNav = { label: 'Kelola', href: '/admin' };
-} else if (sesiSeller?.penggunaId) {
-    const tokonya = ambilLapak(sesiSeller.penggunaId);
-    akunNav = { label: tokonya ? tokonya.nama : 'Toko saya', href: '/akun' };
-  }
+   pengunjung yang belum masuk ke halaman masuk. Sisi kanan header memakai foto
+   toko sebagai ikon akun: seller melihat fotonya (atau inisial kalau belum
+   unggah), pengunjung melihat ikon orang. Tautan teks hanya tersisa untuk admin,
+   karena "Kelola" bukan akun pribadi. */
+const tokonya = sesiSeller?.penggunaId ? ambilLapak(sesiSeller.penggunaId) : null;
+const hrefAkun = sesiSeller ? '/akun' : '/masuk';
+const labelAkun = tokonya?.nama ?? 'Toko saya';
 ---
 
 <header class="header-tetap border-b border-garis bg-dasar">
@@ -70,13 +69,6 @@ if (admin) {
             </a>
           ))
         }
-        <a
-          href={akunNav.href}
-          title={akunNav.label}
-          class="target-sentuh inline-flex max-w-40 items-center truncate rounded-md px-3 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
-        >
-          {akunNav.label}
-        </a>
         {/* Di halaman yang sudah punya tombol WhatsApp aksen sendiri, header
             pakai gaya teks supaya layar itu tidak punya dua tombol aksen yang
             mengarah ke tempat yang sama. */}
@@ -96,6 +88,59 @@ if (admin) {
               Tanya lewat WhatsApp
             </a>
           ))}
+        {
+          admin ? (
+            <a
+              href="/admin"
+              title="Kelola"
+              class="target-sentuh ml-2 inline-flex items-center rounded-md px-3 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+            >
+              Kelola
+            </a>
+          ) : sesiSeller ? (
+            <a
+              href={hrefAkun}
+              title={`Akun ${labelAkun}`}
+              aria-label={`Akun ${labelAkun}`}
+              class="target-sentuh ml-2 inline-flex items-center justify-center rounded-md p-1 hover:bg-stone-100"
+            >
+              {tokonya?.foto ? (
+                <img
+                  src={fotoSrc(tokonya.foto, 'thumb')}
+                  alt=""
+                  width={36}
+                  height={36}
+                  class="size-9 rounded-md border border-garis bg-stone-100 object-cover"
+                />
+              ) : (
+                <span class="flex size-9 items-center justify-center rounded-md bg-stone-900 font-sans text-sm font-bold text-white">
+                  {inisial(labelAkun)}
+                </span>
+              )}
+            </a>
+          ) : (
+            <a
+              href={hrefAkun}
+              title="Masuk"
+              aria-label="Masuk"
+              class="target-sentuh ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-md border border-garis text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="size-5"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="8.4" r="3.6" />
+                <path d="M4.8 20.2a7.2 7.2 0 0 1 14.4 0" />
+              </svg>
+            </a>
+          )
+        }
     </nav>
   </div>
 </header>

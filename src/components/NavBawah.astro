@@ -1,8 +1,15 @@
 ---
 import { bacaSesi, COOKIE_ADMIN, COOKIE_AKUN } from '../lib/auth';
+import { ambilLapak } from '../lib/db';
+import { fotoSrc } from '../lib/foto';
+import { inisial } from '../data/site';
 
 const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
 const seller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+
+/* Tab Akun menampilkan identitas seller supaya bar bawah langsung menjawab
+   "akun siapa yang sedang masuk"; pengunjung tanpa foto tetap ikon orang. */
+const tokonya = seller?.penggunaId ? ambilLapak(seller.penggunaId) : null;
 
 const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
 const diKatalog = path === '/katalog' || path.startsWith('/hp/') || path.startsWith('/lapak/');
@@ -52,40 +59,61 @@ if (admin) {
             aria-current={tab.aktif ? 'page' : false}
             class="target-sentuh flex h-full flex-col items-center justify-center gap-1 px-1 py-2 text-[0.6875rem] font-medium leading-tight text-stone-600"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="size-6"
-              aria-hidden="true"
-            >
-              {tab.ikon === 'rumah' && (
-                <path d="M3.6 10.4 12 3.4l8.4 7v9a1.4 1.4 0 0 1-1.4 1.4h-3.6v-5.2a1.2 1.2 0 0 0-1.2-1.2H9.8a1.2 1.2 0 0 0-1.2 1.2v5.2H5A1.4 1.4 0 0 1 3.6 19.4Z" />
-              )}
-              {tab.ikon === 'katalog' && (
-                <>
-                  <rect x="3.4" y="3.4" width="7.4" height="7.4" rx="0.7" />
-                  <rect x="13.2" y="3.4" width="7.4" height="7.4" rx="0.7" />
-                  <rect x="3.4" y="13.2" width="7.4" height="7.4" rx="0.7" />
-                  <rect x="13.2" y="13.2" width="7.4" height="7.4" rx="0.7" />
-                </>
-              )}
-              {tab.ikon === 'orang' && (
-                <>
-                  <circle cx="12" cy="8.4" r="3.6" />
-                  <path d="M4.8 20.2a7.2 7.2 0 0 1 14.4 0" />
-                </>
-              )}
-              {tab.ikon === 'roda' && (
-                <>
-                  <circle cx="12" cy="12" r="3.4" />
-                  <path d="M12 3v3M12 18v3M21 12h-3M6 12H3M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M18.4 18.4l-2.1-2.1M7.7 7.7 5.6 5.6" />
-                </>
-              )}
-            </svg>
+            {
+              tab.ikon === 'orang' && seller ? (
+                tokonya?.foto ? (
+                  <img
+                    src={fotoSrc(tokonya.foto, 'thumb')}
+                    alt=""
+                    width={24}
+                    height={24}
+                    class="size-6 rounded-md border border-garis bg-stone-100 object-cover"
+                  />
+                ) : (
+                  <span
+                    class="flex size-6 items-center justify-center rounded-md bg-stone-900 font-sans text-[0.625rem] font-bold text-white"
+                    aria-hidden="true"
+                  >
+                    {inisial(tokonya?.nama ?? 'Toko saya')}
+                  </span>
+                )
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="size-6"
+                  aria-hidden="true"
+                >
+                  {tab.ikon === 'rumah' && (
+                    <path d="M3.6 10.4 12 3.4l8.4 7v9a1.4 1.4 0 0 1-1.4 1.4h-3.6v-5.2a1.2 1.2 0 0 0-1.2-1.2H9.8a1.2 1.2 0 0 0-1.2 1.2v5.2H5A1.4 1.4 0 0 1 3.6 19.4Z" />
+                  )}
+                  {tab.ikon === 'katalog' && (
+                    <>
+                      <rect x="3.4" y="3.4" width="7.4" height="7.4" rx="0.7" />
+                      <rect x="13.2" y="3.4" width="7.4" height="7.4" rx="0.7" />
+                      <rect x="3.4" y="13.2" width="7.4" height="7.4" rx="0.7" />
+                      <rect x="13.2" y="13.2" width="7.4" height="7.4" rx="0.7" />
+                    </>
+                  )}
+                  {tab.ikon === 'orang' && (
+                    <>
+                      <circle cx="12" cy="8.4" r="3.6" />
+                      <path d="M4.8 20.2a7.2 7.2 0 0 1 14.4 0" />
+                    </>
+                  )}
+                  {tab.ikon === 'roda' && (
+                    <>
+                      <circle cx="12" cy="12" r="3.4" />
+                      <path d="M12 3v3M12 18v3M21 12h-3M6 12H3M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M18.4 18.4l-2.1-2.1M7.7 7.7 5.6 5.6" />
+                    </>
+                  )}
+                </svg>
+              )
+            }
             <span>{tab.label}</span>
           </a>
         </li>
