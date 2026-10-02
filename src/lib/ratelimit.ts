@@ -13,11 +13,23 @@ const KUNCI_MS = 15 * 60_000;
 export type Kunci = readonly string[];
 
 /**
+ * IP untuk kunci rate limit. `Astro.clientAddress` di belakang Nginx adalah IP
+ * proxy, jadi kalau dipakai mentah semua pengunjung berbagi satu kunci: lima
+ * percobaan gagal dari siapa pun mengunci login orang lain. Nginx sudah
+ * mengirim `X-Real-IP`, dan header itu tidak bisa dipalsukan dari luar karena
+ * port app tidak dipublish ke host, hanya Nginx dan network internal yang
+ * menyentuh app.
+ */
+export const ipPengguna = (request: Request, alamatClient: string): string =>
+  request.headers.get('cf-connecting-ip') ??
+  request.headers.get('x-real-ip') ??
+  alamatClient;
+
+/**
  * Kunci dihitung terpisah: login terkunci kalau IP atau nomornya sendiri
- * sudah melewati batas. Menjumlahkan semua penghitung akan membuat satu IP
- * yang mengetik dengan lima nomor berbeda ikut terkunci setelah tiga percobaan,
- * dengan lima nomor berbeda ikut terkunci setelah tiga percobaan, dan itu
- * bukan yang mau di sini — yang dilindungi adalah satu akun.
+ * sudah melewati batas. Menjumlahkan semua penghitung akan membuat satu IP yang
+ * mengetik lima nomor berbeda ikut terkunci setelah lima percobaan, padahal
+ * yang dilindungi di sini adalah satu akun, bukan satu mesin.
  */
 export const terkunci = (kunci: Kunci): boolean => {
   const sekarang = Date.now();

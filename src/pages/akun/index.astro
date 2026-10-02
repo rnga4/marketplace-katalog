@@ -100,7 +100,7 @@ function warna(m: Moderasi): string {
                 <div class="mt-1 flex flex-wrap items-center gap-3 text-xs">
                   <a href={`/akun/edit/${u.slug}`} class="target-sentuh font-medium text-aksi-teks underline">Ubah</a>
                   {u.moderasi === 'tayang' && (
-                    <a href={`/hp/${u.slug}`} class="target-suchen font-medium text-stone-600 underline">Lihat halaman</a>
+                    <a href={`/hp/${u.slug}`} class="target-sentuh font-medium text-stone-600 underline">Lihat halaman</a>
                   )}
                   <form method="post" action="/akun/hapus">
                     <input type="hidden" name="csrf" value={sesiAkun?.csrf ?? ""} />

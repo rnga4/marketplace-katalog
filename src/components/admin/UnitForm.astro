@@ -20,7 +20,7 @@ const fotoTerpilih = nilai.foto ?? [];
 <form method="post" action={action} enctype="multipart/form-data" data-simpan="Menyimpan…" class="flex flex-col gap-6">
   <input type="hidden" name="csrf" value={csrf} />
 
-  <fieldset class="flex flex-col gap-3">
+  <fieldset class="flex min-w-0 flex-col gap-3">
     <legend class="text-sm font-bold text-stone-900">Identitas unit</legend>
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5">
@@ -64,7 +64,7 @@ const fotoTerpilih = nilai.foto ?? [];
     </div>
   </fieldset>
 
-  <fieldset class="flex flex-col gap-3">
+  <fieldset class="flex min-w-0 flex-col gap-3">
     <legend class="text-sm font-bold text-stone-900">Harga & status</legend>
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5">
@@ -92,7 +92,7 @@ const fotoTerpilih = nilai.foto ?? [];
     </div>
   </fieldset>
 
-  <fieldset class="flex flex-col gap-3">
+  <fieldset class="flex min-w-0 flex-col gap-3">
     <legend class="text-sm font-bold text-stone-900">Spesifikasi ringkas</legend>
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5">
@@ -111,7 +111,7 @@ const fotoTerpilih = nilai.foto ?? [];
     </div>
   </fieldset>
 
-  <fieldset class="flex flex-col gap-3">
+  <fieldset class="flex min-w-0 flex-col gap-3">
     <legend class="text-sm font-bold text-stone-900">Keterangan</legend>
     <label class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Deskripsi</span>
@@ -129,7 +129,7 @@ Kabel USB-C" class="target-sentuh rounded-md border border-stone-300 bg-dasar px
     </label>
   </fieldset>
 
-  <fieldset class="flex flex-col gap-3">
+  <fieldset class="flex min-w-0 flex-col gap-3">
     <legend class="text-sm font-bold text-stone-900">Foto</legend>
 
     {
@@ -150,7 +150,7 @@ Kabel USB-C" class="target-sentuh rounded-md border border-stone-300 bg-dasar px
     </label>
     <label class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Upload foto baru (boleh banyak sekaligus)</span>
-      <input type="file" name="fotoBaru" accept="image/*" multiple class="target-sentuh text-sm text-stone-600 file:mr-3 file:rounded-md file:border file:border-stone-300 file:bg-stone-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-stone-900" />
+      <input type="file" name="fotoBaru" accept="image/*" multiple class="target-sentuh min-w-0 max-w-full text-sm text-stone-600 file:mr-3 file:rounded-md file:border file:border-stone-300 file:bg-stone-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-stone-900" />
     </label>
     <p class="text-xs text-stone-500">File terupload otomatis ditambahkan ke daftar foto di atas.</p>
   </fieldset>

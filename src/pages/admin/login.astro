@@ -6,7 +6,7 @@ import { buatCsrf, buatToken, cookieAman, COOKIE_ADMIN } from '../../lib/auth';
 import { cekKataSandi, ambilAdmin } from '../../lib/db';
 import { teksForm } from '../../lib/forms';
 import { sleep } from '../../lib/waktu';
-import { terkunci, catatGagal, bersihkan, type Kunci } from '../../lib/ratelimit';
+import { terkunci, catatGagal, bersihkan, ipPengguna, type Kunci } from '../../lib/ratelimit';
 import Kembali from '../../components/Kembali.astro';
 
 const csrf = buatCsrf();
@@ -21,7 +21,7 @@ if (Astro.request.method === 'POST') {
   if (!dariCookie || teksForm(fd, 'csrf') !== dariCookie) {
     galat = 'Gagal verifikasi formulir. Muat ulang halaman lalu coba lagi.';
   } else {
-    const ip = Astro.request.headers.get('cf-connecting-ip') ?? Astro.clientAddress;
+    const ip = ipPengguna(Astro.request, Astro.clientAddress);
     const kunci: Kunci = [`admin:ip:${ip}`];
     const dikunci = terkunci(kunci);
     const benar = !dikunci && cekKataSandi(teksForm(fd, 'kataSandi'));

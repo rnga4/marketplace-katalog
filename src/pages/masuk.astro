@@ -7,7 +7,7 @@ import { ambilPenggunaByNomor, cekKataSandiPengguna } from '../lib/db';
 import { teksForm } from '../lib/forms';
 import { normalisasiWa } from '../data/site';
 import { sleep } from '../lib/waktu';
-import { terkunci, catatGagal, bersihkan, type Kunci } from '../lib/ratelimit';
+import { terkunci, catatGagal, bersihkan, ipPengguna, type Kunci } from '../lib/ratelimit';
 import Kembali from '../components/Kembali.astro';
 
 const csrf = buatCsrf();
@@ -26,7 +26,7 @@ if (Astro.request.method === 'POST') {
   } else {
     const nomor = normalisasiWa(teksForm(fd, 'nomor'));
     const sandi = teksForm(fd, 'kataSandi');
-    const ip = Astro.request.headers.get('cf-connecting-ip') ?? Astro.clientAddress;
+      const ip = ipPengguna(Astro.request, Astro.clientAddress);
     // Dua kunci terpisah, bukan satu gabungan. Kalau digabung, penyerang cukup
     // cycling 5 nomor berbeda per 15 menit untuk menebak tanpa pernah kena
     // batas, karena kuncinya ikut berubah tiap nomor.

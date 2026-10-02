@@ -75,7 +75,7 @@ const bantuan = 'text-xs text-stone-600';
   <form method="post" action="/admin/pengaturan" class="flex max-w-2xl flex-col gap-6">
     <input type="hidden" name="csrf" value={csrf} />
 
-    <fieldset class="flex flex-col gap-3">
+    <fieldset class="flex min-w-0 flex-col gap-3">
       <legend class="text-sm font-bold text-stone-900">Nama</legend>
       <div class="grid gap-3 sm:grid-cols-2">
         <label class={label}>
@@ -96,7 +96,7 @@ const bantuan = 'text-xs text-stone-600';
       </label>
     </fieldset>
 
-    <fieldset class="flex flex-col gap-3">
+    <fieldset class="flex min-w-0 flex-col gap-3">
       <legend class="text-sm font-bold text-stone-900">Kontak</legend>
       <label class={label}>
         <span class={spanLabel}>Nomor WhatsApp</span>
@@ -120,7 +120,7 @@ const bantuan = 'text-xs text-stone-600';
       </label>
     </fieldset>
 
-    <fieldset class="flex flex-col gap-3">
+    <fieldset class="flex min-w-0 flex-col gap-3">
       <legend class="text-sm font-bold text-stone-900">Deskripsi</legend>
       <label class={label}>
         <span class={spanLabel}>Deskripsi toko</span>
