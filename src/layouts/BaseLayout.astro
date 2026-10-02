@@ -72,8 +72,11 @@ const ogAbsolut = urlAbsolut(ogImage, Astro.site);
     ::view-transition-old(root) { animation: 140ms ease-in both vt-keluar; }
     ::view-transition-new(root) { animation: 240ms ease-out both vt-masuk; }
 
-    img[data-fade] { transition: opacity 0.35s ease-out, transform 0.3s ease-out; }
+    img[data-fade] { transition: opacity 0.35s ease-out; }
     #foto-utama { transition: opacity 0.35s ease-out; }
+
+    .zoom-kartu { transition: transform 0.3s ease-out; }
+    .group:hover .zoom-kartu { transform: scale(1.03); }
 
     @keyframes kartu-naik { from { opacity: 0; transform: translateY(10px); } }
     .kartu-masuk {
