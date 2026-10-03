@@ -143,8 +143,70 @@ button[aria-busy="true"]::before {
   animation: putar 0.7s linear infinite;
 }
 
-/* Umpan balik tekan untuk tombol dan tautan (bukan input) */
+/* Elemen yang sama antar halaman diberi nama supaya tidak ikut crossfade:
+   header publik dan bar bawah tetap di tempatnya saat halaman berganti.
+   Bar admin dan akun sengaja tanpa nama: isinya berbeda per halaman, jadi
+   lebih rapi ikut memudar bersama isi daripada dipaksa diam. */
+.header-tetap {
+  view-transition-name: header;
+}
+.nav-bawah {
+  view-transition-name: nav-bawah;
+}
+.foto-tunggu {
+  opacity: 0;
+}
+
+/* Gerak halaman. Crossfade native dipakai di setiap path — publik, akun, auth,
+   dan panel admin — supaya perpindahan terasa halus dan konsisten. Semua di
+   bawah prefers-reduced-motion: pengguna yang mematikannya tidak melihat
+   gerakan apa pun, cukup halaman tampil. Loop tanpa henti, pulse, parallax,
+   scroll-reveal, dan scroll-behavior: smooth tetap dilarang (DESIGN.md). */
 @media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+  @keyframes vt-keluar {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes vt-masuk {
+    from {
+      opacity: 0;
+    }
+  }
+  ::view-transition-old(root) {
+    animation: 140ms ease-in both vt-keluar;
+  }
+  ::view-transition-new(root) {
+    animation: 240ms ease-out both vt-masuk;
+  }
+
+  img[data-fade],
+  #foto-utama {
+    transition: opacity 0.35s ease-out;
+  }
+
+  .zoom-kartu {
+    transition: transform 0.3s ease-out;
+  }
+  .group:hover .zoom-kartu {
+    transform: scale(1.03);
+  }
+
+  @keyframes kartu-naik {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+  .kartu-masuk {
+    animation: kartu-naik 0.4s ease-out both;
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+
+  /* Umpan balik tekan untuk tombol dan tautan (bukan input) */
   a.target-sentuh,
   button.target-sentuh {
     transition: transform 80ms ease-out;

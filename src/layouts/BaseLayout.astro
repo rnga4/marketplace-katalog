@@ -60,31 +60,6 @@ const ogAbsolut = urlAbsolut(ogImage, Astro.site);
     <NavBawah />
   </body>
 </html>
-<style is:global>
-  .header-tetap { view-transition-name: header; }
-  .nav-bawah { view-transition-name: nav-bawah; }
-  .foto-tunggu { opacity: 0; }
-
-  @media (prefers-reduced-motion: no-preference) {
-    @view-transition { navigation: auto; }
-    @keyframes vt-keluar { to { opacity: 0; } }
-    @keyframes vt-masuk { from { opacity: 0; } }
-    ::view-transition-old(root) { animation: 140ms ease-in both vt-keluar; }
-    ::view-transition-new(root) { animation: 240ms ease-out both vt-masuk; }
-
-    img[data-fade] { transition: opacity 0.35s ease-out; }
-    #foto-utama { transition: opacity 0.35s ease-out; }
-
-    .zoom-kartu { transition: transform 0.3s ease-out; }
-    .group:hover .zoom-kartu { transform: scale(1.03); }
-
-    @keyframes kartu-naik { from { opacity: 0; transform: translateY(10px); } }
-    .kartu-masuk {
-      animation: kartu-naik 0.4s ease-out both;
-      animation-delay: calc(var(--i, 0) * 45ms);
-    }
-  }
-</style>
 
 <script>
   for (const img of document.querySelectorAll<HTMLImageElement>('img[data-fade]')) {
