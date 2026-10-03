@@ -79,7 +79,7 @@ const tersedia = semua.filter((u) => u.tersedia);
             <p class="mt-1 text-sm text-stone-600">Cek katalog untuk unit dari penjual lain.</p>
           </div>
         ) : (
-          <ul class="grid grid-cols-2 gap-4 lg:grid-cols-3">
+          <ul class="tutup-bidang grid grid-cols-2 gap-0 border-t border-l border-garis lg:grid-cols-3">
             {semua.map((u) => (
               <li>
                 <UnitHpCard unit={u} />

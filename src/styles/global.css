@@ -56,6 +56,22 @@ textarea:focus-visible {
   min-height: 2.75rem;
 }
 
+/* Bidang bergaris (border-t border-l di wadah, border-r border-b di sel) dibiarkan
+   utuh oleh baris yang tidak penuh: lapisan ini menutup sisi kanan dan bawah
+   mengikuti kotak wadah, jadi bentuknya tetap persegi dari jumlah isi berapa pun. */
+.tutup-bidang {
+  position: relative;
+}
+
+.tutup-bidang::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-right: 1px solid var(--color-garis);
+  border-bottom: 1px solid var(--color-garis);
+  pointer-events: none;
+}
+
 /* Header publik menempel di atas. Katalog bisa panjang dan tidak ada footer di
    setiap halaman, jadi tanpa ini orang yang menggulir ke bawah kehilangan
    jalan kembali ke Katalog dan ke Akun. Sticky, bukan fixed: posisinya tetap
