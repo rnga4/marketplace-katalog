@@ -25,10 +25,10 @@ const NAV = [
 ] as const;
 
 /* Admin diarahkan ke panel kerjanya, seller ke produknya sendiri, dan
-   pengunjung yang belum masuk ke halaman masuk. Sisi kanan header memakai foto
-   toko sebagai ikon akun: seller melihat fotonya (atau inisial kalau belum
-   unggah), pengunjung melihat ikon orang. Tautan teks hanya tersisa untuk admin,
-   karena "Kelola" bukan akun pribadi. */
+   pengunjung yang belum masuk ke halaman masuk. Identitas toko menempel di
+   pojok kanan atas pada semua lebar: seller melihat nama dan foto tokonya
+   (atau inisial kalau belum unggah), pengunjung melihat ikon orang. Tautan teks
+   hanya tersisa untuk admin, karena "Kelola" bukan akun pribadi. */
 const tokonya = sesiSeller?.penggunaId ? ambilLapak(sesiSeller.penggunaId) : null;
 const hrefAkun = sesiSeller ? '/akun' : '/masuk';
 const labelAkun = tokonya?.nama ?? 'Toko saya';
@@ -48,11 +48,11 @@ const labelAkun = tokonya?.nama ?? 'Toko saya';
         </a>
       )
     }
-    {/* Di mobile linkan ini disembunyikan karena tujuan utamanya pindah ke bar
-        bawah. Kalau tidak, logo + nav penuh akan melebihi lebar 360px. Beranda
-        dan Katalog sekarang halaman terpisah, jadi tiap link punya tujuan
-        sendiri tanpa tab aktif yang harus bergeser. */}
-    <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
+    {/* Tautan nav atas hanya muat dari lebar desktop; di bawahnya bar bawah yang
+        jadi tempat utama. Identitas akun tetap di baris header pada semua lebar
+        supaya selalu terlihat akun siapa yang sedang dipakai. */}
+    <div class="ml-auto flex min-w-0 items-center gap-1">
+      <nav class="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
         {
           NAV.map((item) => (
             <a
@@ -64,31 +64,37 @@ const labelAkun = tokonya?.nama ?? 'Toko saya';
           ))
         }
         {
-          admin ? (
+          admin && (
             <a
               href="/admin"
               title="Kelola"
-              class="target-sentuh ml-2 inline-flex items-center rounded-md px-3 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+              class="target-sentuh ml-1 inline-flex items-center rounded-md px-3 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
             >
               Kelola
             </a>
-          ) : sesiSeller ? (
+          )
+        }
+      </nav>
+      {
+        !admin &&
+          (sesiSeller ? (
             <a
               href={hrefAkun}
               title={`Akun ${labelAkun}`}
               aria-label={`Akun ${labelAkun}`}
-              class="target-sentuh ml-2 inline-flex items-center justify-center rounded-md p-1 hover:bg-stone-100"
+              class="target-sentuh flex min-w-0 items-center gap-2 rounded-md py-1 pl-2 pr-1 hover:bg-stone-100"
             >
+              <span class="truncate text-sm font-bold tracking-tight text-stone-900">{labelAkun}</span>
               {tokonya?.foto ? (
                 <img
                   src={fotoSrc(tokonya.foto, 'thumb')}
                   alt=""
-                  width={36}
-                  height={36}
-                  class="size-9 rounded-md border border-garis bg-stone-100 object-cover"
+                  width={32}
+                  height={32}
+                  class="size-8 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
                 />
               ) : (
-                <span class="flex size-9 items-center justify-center rounded-md bg-stone-900 font-sans text-sm font-bold text-white">
+                <span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
                   {inisial(labelAkun)}
                 </span>
               )}
@@ -98,7 +104,7 @@ const labelAkun = tokonya?.nama ?? 'Toko saya';
               href={hrefAkun}
               title="Masuk"
               aria-label="Masuk"
-              class="target-sentuh ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-md border border-garis text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+              class="target-sentuh inline-flex size-11 shrink-0 items-center justify-center rounded-md border border-garis text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -114,9 +120,9 @@ const labelAkun = tokonya?.nama ?? 'Toko saya';
                 <path d="M4.8 20.2a7.2 7.2 0 0 1 14.4 0" />
               </svg>
             </a>
-          )
-        }
-    </nav>
+          ))
+      }
+    </div>
   </div>
 </header>
 
