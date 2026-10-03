@@ -49,6 +49,20 @@ const ogAbsolut = urlAbsolut(ogImage, Astro.site);
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preload" as="font" type="font/woff2" href={fontLatin} crossorigin />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <script is:inline>
+      /* Saat halaman datang lewat view transition, snapshot diambil di pagereveal:
+         kalau animasi masuk dan foto masih disembunyikan, yang terekam kotak
+         kosong dan isinya baru nongol setelah transisi selesai. Jadi di sini isi
+         langsung dipulihkan ke keadaan akhir. Flag di <html> sengaja dibiarkan
+         selama umur halaman: kalau dilepas, animasi masuk malah dijalankan ulang
+         dari nol tepat saat transisi selesai. Halaman ini penuh muat ulang, jadi
+         flag tidak perlu dibersihkan. */
+      addEventListener('pagereveal', (e) => {
+        if (!e || !e.viewTransition) return;
+        document.documentElement.classList.add('sedang-transisi');
+        for (const img of document.querySelectorAll('img[data-fade]')) img.classList.remove('foto-tunggu');
+      });
+    </script>
     <slot name="head" />
   </head>
   <body>
@@ -64,6 +78,7 @@ const ogAbsolut = urlAbsolut(ogImage, Astro.site);
 <script>
   for (const img of document.querySelectorAll<HTMLImageElement>('img[data-fade]')) {
     if (img.complete) continue;
+    if (document.documentElement.classList.contains('sedang-transisi')) continue;
     img.classList.add('foto-tunggu');
     const buka = () => img.classList.remove('foto-tunggu');
     img.addEventListener('load', buka, { once: true });

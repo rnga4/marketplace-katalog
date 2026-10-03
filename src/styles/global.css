@@ -206,6 +206,17 @@ button[aria-busy="true"]::before {
     animation-delay: calc(var(--i, 0) * 45ms);
   }
 
+  /* Halaman yang datang lewat view transition sudah dianimasikan oleh transisi
+     itu sendiri, jadi animasi masuk dan fade foto dimatikan: elemen sudah di
+     keadaan akhir saat snapshot diambil, tidak ada yang nongol setelah selesai. */
+  .sedang-transisi .kartu-masuk {
+    animation: none;
+  }
+  .sedang-transisi img[data-fade],
+  .sedang-transisi #foto-utama {
+    transition: none;
+  }
+
   /* Umpan balik tekan untuk tombol dan tautan (bukan input) */
   a.target-sentuh,
   button.target-sentuh {
