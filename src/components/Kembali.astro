@@ -7,20 +7,25 @@
  * `history.back()` supaya kembali ke halaman yang benar-benar dibuka sebelum ini,
  * bukan melompat ke tujuan statis. `referrer` dicek supaya pengunjung yang datang
  * dari luar situs (misalnya tautan WhatsApp) tidak justru dilempar keluar.
+ *
+ * `statis` mematikan pengiring itu: tautan selalu menuju `href`, cocok untuk
+ * tombol satu tujuan yang tidak boleh ikut berubah mengikuti halaman asal.
  */
 interface Props {
   href: string;
   label: string;
   /** Untuk halaman tanpa header, tombolnya jadi anak `main` yang butuh `self-start`. */
   mandiri?: boolean;
+  /** Abaikan `history.back()`, selalu ke `href`. */
+  statis?: boolean;
 }
 
-const { href, label, mandiri = false } = Astro.props;
+const { href, label, mandiri = false, statis = false } = Astro.props;
 
 const kelas = `target-sentuh -ml-2 inline-flex min-w-0 items-center gap-1.5 rounded-md py-2 pr-2 text-sm font-medium text-stone-700 hover:text-aksi-teks${mandiri ? ' self-start' : ''}`;
 ---
 
-<a href={href} data-kembali class={kelas}>
+<a href={href} data-kembali={statis ? undefined : ''} class={kelas}>
   <svg
     viewBox="0 0 24 24"
     fill="none"

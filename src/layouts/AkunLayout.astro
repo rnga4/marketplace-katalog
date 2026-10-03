@@ -12,19 +12,15 @@ interface Props {
   title: string;
   pengguna: Pengguna;
   notif?: { jenis: 'ok' | 'err'; teks: string } | null;
-  kembali?: { href: string; label: string } | null;
 }
 
-const { title, pengguna, notif = null, kembali = null } = Astro.props;
+const { title, pengguna, notif = null } = Astro.props;
 const sesi = Astro.locals.pengguna ?? pengguna;
 const lapak = ambilLapak(sesi.id);
 const sesiAkun = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 const csrf = sesiAkun?.csrf ?? '';
 const aktif = Astro.url.pathname.replace(/\/$/, '') || '/akun';
 const namaToko = lapak?.nama ?? 'Toko saya';
-// Tautan identitas menuju /akun. Saat tombol kembali sudah menuju /akun juga,
-// keduanya jadi jalur yang sama, jadi identitas disembunyikan agar tidak ganda.
-const tampilIdentitas = !kembali || kembali.href !== '/akun';
 ---
 
 <!doctype html>
@@ -44,30 +40,23 @@ const tampilIdentitas = !kembali || kembali.href !== '/akun';
             menempel kiri, sementara identitas didorong ke pojok kanan lewat
             `ml-auto`. Foto selalu di ujung kanan identitas, namanya di kirinya. */}
         <div class="flex min-w-0 items-center justify-between gap-3 md:contents">
-          {kembali && <Kembali href={kembali.href} label={kembali.label} />}
-          {
-            tampilIdentitas && (
-              <a
-                href="/akun"
-                class="target-sentuh flex min-w-0 items-center gap-2 md:order-2 md:ml-auto"
-              >
-                <span class="truncate text-sm font-bold tracking-tight text-stone-900">{namaToko}</span>
-                {lapak?.foto ? (
-                  <img
-                    src={fotoSrc(lapak.foto, 'thumb')}
-                    alt=""
-                    width={32}
-                    height={32}
-                    class="size-8 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
-                  />
-                ) : (
-                  <span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
-                    {sesi.nama.slice(0, 2).toUpperCase()}
-                  </span>
-                )}
-              </a>
-            )
-          }
+          <Kembali href="/" label="Beranda" statis />
+          <a href="/akun" class="target-sentuh flex min-w-0 items-center gap-2 md:order-2 md:ml-auto">
+            <span class="truncate text-sm font-bold tracking-tight text-stone-900">{namaToko}</span>
+            {lapak?.foto ? (
+              <img
+                src={fotoSrc(lapak.foto, 'thumb')}
+                alt=""
+                width={32}
+                height={32}
+                class="size-8 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
+              />
+            ) : (
+              <span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
+                {sesi.nama.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+          </a>
         </div>
         <nav class="flex flex-wrap items-center gap-1" aria-label="Navigasi toko">
           <a

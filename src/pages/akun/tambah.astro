@@ -40,7 +40,7 @@ if (Astro.request.method === 'POST') {
 }
 ---
 
-<AkunLayout title="Tambah produk" pengguna={pengguna} notif={galat ? { jenis: 'err', teks: galat } : null} kembali={{ href: '/akun', label: 'Produk saya' }}>
+<AkunLayout title="Tambah produk" pengguna={pengguna} notif={galat ? { jenis: 'err', teks: galat } : null}>
   <header class="mb-6">
     <h1 class="text-xl font-bold tracking-tight text-stone-900">Tambah produk</h1>
     <p class="mt-1 text-sm text-stone-600">
