@@ -145,7 +145,7 @@ const notif = galat
             name="fotoBaru"
             accept="image/jpeg,image/png,image/webp"
             required
-            class="text-sm text-stone-900 file:mr-3 file:rounded-md file:border-0 file:bg-aksi file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+            class="target-sentuh text-sm text-stone-900 file:mr-3 file:rounded-md file:border-0 file:bg-aksi file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
           />
           <div>
             <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">
@@ -179,7 +179,7 @@ const notif = galat
         required
         maxlength="80"
         value={lapak?.nama ?? pengguna.nama}
-        class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+        class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
       />
     </label>
     <label class="flex flex-col gap-1.5">
@@ -189,7 +189,7 @@ const notif = galat
         inputmode="numeric"
         placeholder="0812 3456 7890"
         value={lapak?.whatsapp ?? ''}
-        class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+        class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
       />
       <span class="text-xs text-stone-600">Kosongkan kalau tidak ingin menampilkan tombol WA di produkmu.</span>
     </label>
@@ -200,12 +200,12 @@ const notif = galat
         maxlength="120"
         placeholder="Jakarta"
         value={lapak?.lokasi ?? ''}
-        class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+        class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
       />
     </label>
     <label class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Deskripsi lapak</span>
-      <textarea name="deskripsi" rows="4" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none">{lapak?.deskripsi ?? ''}</textarea>
+      <textarea name="deskripsi" rows="4" class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none">{lapak?.deskripsi ?? ''}</textarea>
     </label>
     <div>
       <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">
@@ -220,16 +220,16 @@ const notif = galat
     <h2 class="text-sm font-bold text-stone-900">Ganti kata sandi</h2>
     <label class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Kata sandi saat ini</span>
-      <input type="password" name="kataSandi" required autocomplete="current-password" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
+      <input type="password" name="kataSandi" required autocomplete="current-password" class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
     </label>
     <label class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Kata sandi baru</span>
-      <input type="password" name="kataSandiBaru" required minlength="8" autocomplete="new-password" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
+      <input type="password" name="kataSandiBaru" required minlength="8" autocomplete="new-password" class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
       <span class="text-xs text-stone-600">Minimal 8 karakter.</span>
     </label>
     <label class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Ulangi kata sandi baru</span>
-      <input type="password" name="kataSandiBaru2" required minlength="8" autocomplete="new-password" class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
+      <input type="password" name="kataSandiBaru2" required minlength="8" autocomplete="new-password" class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none" />
     </label>
     <div>
       <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">

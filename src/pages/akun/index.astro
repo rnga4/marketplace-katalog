@@ -22,6 +22,9 @@ const menunggu = semua.filter((u) => u.moderasi === 'menunggu').length;
 const tayang = semua.filter((u) => u.moderasi === 'tayang').length;
 const ditolak = semua.filter((u) => u.moderasi === 'tolak').length;
 
+const hapusSlug = Astro.url.searchParams.get('hapus');
+const unitHapus = hapusSlug ? semua.find((u) => u.slug === hapusSlug) ?? null : null;
+
 function warna(m: Moderasi): string {
   if (m === 'tayang') return 'border-emerald-700 bg-emerald-50 text-emerald-900';
   if (m === 'tolak') return 'border-red-700 bg-red-50 text-red-900';
@@ -74,6 +77,7 @@ function warna(m: Moderasi): string {
       <ul class="flex flex-col gap-3">
         {semua.map((u) => {
           const coret = hargaTercoret(u);
+          const sedangKonfirmasi = unitHapus?.slug === u.slug;
           return (
             <li class="flex gap-3 rounded-md border border-garis p-3">
               <img
@@ -85,6 +89,28 @@ function warna(m: Moderasi): string {
                 class="size-20 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
               />
               <div class="flex min-w-0 flex-1 flex-col gap-1">
+                {sedangKonfirmasi && (
+                  <div
+                    id="konfirmasi-hapus"
+                    role="alert"
+                    class="mb-1 rounded-md border border-red-700 bg-red-50 px-3 py-3"
+                  >
+                    <p class="text-sm font-semibold text-red-900">Hapus “{u.nama}” dari toko kamu?</p>
+                    <p class="mt-1 text-sm text-red-800">Ini menghapus produk beserta semua fotonya, dan tidak bisa dibatalkan.</p>
+                    <div class="mt-3 flex gap-3">
+                      <form method="post" action="/akun/hapus">
+                        <input type="hidden" name="csrf" value={sesiAkun?.csrf ?? ""} />
+                        <input type="hidden" name="slug" value={u.slug} />
+                        <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800">
+                          Ya, hapus
+                        </button>
+                      </form>
+                      <a href="/akun" class="target-sentuh inline-flex items-center rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-100">
+                        Batal
+                      </a>
+                    </div>
+                  </div>
+                )}
                 <div class="flex flex-wrap items-start justify-between gap-2">
                   <div class="min-w-0">
                     <p class="truncate text-sm font-semibold text-stone-900">{u.nama}</p>
@@ -98,16 +124,11 @@ function warna(m: Moderasi): string {
                   <p class="text-xs text-red-800">Alasan ditolak: {u.alasanModerasi}</p>
                 )}
                 <div class="mt-1 flex flex-wrap items-center gap-3 text-xs">
-                  <a href={`/akun/edit/${u.slug}`} class="target-sentuh font-medium text-aksi-teks underline">Ubah</a>
+                  <a href={`/akun/edit/${u.slug}`} class="target-sentuh inline-flex min-w-11 items-center justify-center font-medium text-aksi-teks underline">Ubah</a>
                   {u.moderasi === 'tayang' && (
-                    <a href={`/hp/${u.slug}`} class="target-sentuh font-medium text-stone-600 underline">Lihat halaman</a>
+                    <a href={`/hp/${u.slug}`} class="target-sentuh inline-flex items-center font-medium text-stone-600 underline">Lihat halaman</a>
                   )}
-                  <form method="post" action="/akun/hapus">
-                    <input type="hidden" name="csrf" value={sesiAkun?.csrf ?? ""} />
-                    
-                    <input type="hidden" name="slug" value={u.slug} />
-                    <button type="submit" class="target-sentuh font-medium text-red-800 underline">Hapus</button>
-                  </form>
+                  <a href={`/akun?hapus=${u.slug}`} class="target-sentuh inline-flex min-w-11 items-center justify-center font-medium text-red-800 underline">Hapus</a>
                 </div>
               </div>
             </li>
@@ -117,3 +138,13 @@ function warna(m: Moderasi): string {
     )
   }
 </AkunLayout>
+
+{unitHapus && (
+  <script>
+    const panel = document.getElementById('konfirmasi-hapus');
+    if (panel) {
+      panel.scrollIntoView({ block: 'center' });
+      panel.querySelector('button')?.focus();
+    }
+  </script>
+)}

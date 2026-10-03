@@ -1,5 +1,4 @@
 ---
-import '@fontsource-variable/plus-jakarta-sans';
 import '../../styles/global.css';
 
 import { buatCsrf, buatToken, cookieAman, COOKIE_ADMIN } from '../../lib/auth';
@@ -99,7 +98,7 @@ if (masuk) return Astro.redirect('/admin');
               required
               autocomplete="current-password"
               minlength="1"
-              class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+              class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
             />
           </label>
           <button type="submit" class="target-sentuh inline-flex items-center justify-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">

@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Satu-satunya berkas font latin, dimuat sebagai 'optional': kalau belum siap
+   saat halaman pertama tampil, teks memakai fallback tanpa swap dan tanpa
+   pergeseran; font baru terpasang di kunjungan berikutnya. */
+@font-face {
+  font-family: "Plus Jakarta Sans Variable";
+  font-style: normal;
+  font-display: optional;
+  font-weight: 200 800;
+  src: url("../assets/plus-jakarta-sans-latin-wght-normal.woff2") format("woff2");
+}
+
 @theme {
   --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
   --color-aksi: #047857;

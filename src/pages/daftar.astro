@@ -1,5 +1,4 @@
 ---
-import '@fontsource-variable/plus-jakarta-sans';
 import '../styles/global.css';
 
 import { buatCsrf, cookieAman, COOKIE_AKUN } from '../lib/auth';
@@ -110,7 +109,7 @@ Astro.cookies.set('hp_csrf', csrf, {
                 value={nilai.namaToko}
                 placeholder="Toko Budi HP"
                 autocomplete="organization"
-                class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+                class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
               />
             </label>
             <label class="flex flex-col gap-1.5">
@@ -123,7 +122,7 @@ Astro.cookies.set('hp_csrf', csrf, {
                 value={nilai.whatsapp}
                 placeholder="0812 3456 7890"
                 autocomplete="tel"
-                class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+                class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
               />
               <span class="text-xs text-stone-600">
                 Dipakai untuk masuk ke akunmu dan dihubungi pembeli lewat tombol di halaman produkmu. Satu
@@ -139,7 +138,7 @@ Astro.cookies.set('hp_csrf', csrf, {
                 minlength="8"
                 maxlength="200"
                 autocomplete="new-password"
-                class="target-sentuh rounded-md border border-stone-300 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+                class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
               />
               <span class="text-xs text-stone-600">Minimal 8 karakter.</span>
             </label>

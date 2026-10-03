@@ -62,21 +62,21 @@ const csrf = sesi?.csrf ?? '';
     <input type="hidden" name="csrf" value={csrf} />
     <label class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Kata sandi saat ini</span>
-      <input type="password" name="kataSandi" required autocomplete="current-password" class="rounded-md border border-stone-300 bg-dasar px-3 py-2 text-sm focus:border-aksi-teks focus:outline-none" />
+      <input type="password" name="kataSandi" required autocomplete="current-password" class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 py-2 text-sm focus:border-aksi-teks focus:outline-none" />
     </label>
     <label class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Kata sandi baru</span>
-      <input type="password" name="kataSandiBaru" required minlength="8" autocomplete="new-password" class="rounded-md border border-stone-300 bg-dasar px-3 py-2 text-sm focus:border-aksi-teks focus:outline-none" />
+      <input type="password" name="kataSandiBaru" required minlength="8" autocomplete="new-password" class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 py-2 text-sm focus:border-aksi-teks focus:outline-none" />
     </label>
     <label class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Ulangi kata sandi baru</span>
-      <input type="password" name="kataSandiBaru2" required minlength="8" autocomplete="new-password" class="rounded-md border border-stone-300 bg-dasar px-3 py-2 text-sm focus:border-aksi-teks focus:outline-none" />
+      <input type="password" name="kataSandiBaru2" required minlength="8" autocomplete="new-password" class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 py-2 text-sm focus:border-aksi-teks focus:outline-none" />
     </label>
     <div class="flex items-center gap-3 border-t border-garis pt-4">
-      <button type="submit" class="rounded-md bg-aksi px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800">
+      <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800">
         Simpan kata sandi baru
       </button>
-      <a href="/admin" class="rounded-md border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-100">
+      <a href="/admin" class="target-sentuh inline-flex items-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-stone-900 hover:bg-stone-100">
         Batal
       </a>
     </div>

@@ -43,8 +43,9 @@ test('satuan menempelkan satuan hanya ke angka polos', () => {
 test('kapital dan namaVt', () => {
   assert.equal(kapital('pixel'), 'Pixel');
   assert.equal(kapital(''), '');
-  assert.equal(namaVt('pixel-3'), 'foto-pixel-3');
-  assert.equal(namaVt('a/b..c'), 'foto-abc');
+  assert.equal(namaVt('pixel-3'), 'foto-pixel-3-1cin56v');
+  assert.equal(namaVt('a/b..c'), 'foto-abc-1ty1zme');
+  assert.notEqual(namaVt('a/b'), namaVt('ab'));
 });
 
 test('rupiahRingkas menyusun juta dan rb', () => {

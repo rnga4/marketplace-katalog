@@ -38,7 +38,12 @@ export function kapital(nilai: string): string {
   return nilai ? nilai.charAt(0).toUpperCase() + nilai.slice(1) : nilai;
 }
 
-/** Nama view-transition per unit (foto kartu ↔ foto detail). Hanya huruf/angka/strip. */
+/** Nama view-transition per unit (foto kartu ↔ foto detail). Sisa huruf/angka/strip
+ *  saja bisa membuat dua slug berbeda jatuh ke nama yang sama, jadi sidik jari
+ *  singkat dari slug aslinya ditambahkan. */
 export function namaVt(slug: string): string {
-  return `foto-${slug.replace(/[^a-z0-9-]/gi, '')}`;
+  let sidik = 5381;
+  for (let i = 0; i < slug.length; i++) sidik = ((sidik << 5) + sidik + slug.charCodeAt(i)) >>> 0;
+  const aman = slug.replace(/[^a-z0-9-]/gi, '') || 'unit';
+  return `foto-${aman}-${sidik.toString(36)}`;
 }
