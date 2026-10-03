@@ -483,6 +483,7 @@ export interface LapakFilter {
 export interface KatalogQuery {
   cari?: string;
   lapak?: string;
+  kondisi?: Kondisi;
   halaman?: number;
   perHalaman?: number;
   /**
@@ -527,6 +528,11 @@ export function katalogUnit(q: KatalogQuery = {}): HasilKatalog {
   if (q.lapak) {
     syarat.push('l.slug = ?');
     nilai.push(q.lapak);
+  }
+
+  if (q.kondisi) {
+    syarat.push('hp.kondisi = ?');
+    nilai.push(q.kondisi);
   }
 
   const where = syarat.join(' AND ');

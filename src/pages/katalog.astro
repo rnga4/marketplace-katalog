@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { katalogUnit, listLapakTersedia, ambilSite } from '../lib/db';
+import { katalogUnit, listLapakTersedia, ambilSite, type Kondisi } from '../lib/db';
+import { PILIHAN_KONDISI } from '../lib/forms';
 import { linkWa } from '../data/site';
 import UnitHpCard from '../components/UnitHpCard.astro';
 import Paginasi from '../components/Paginasi.astro';
@@ -8,14 +9,18 @@ import Paginasi from '../components/Paginasi.astro';
 const q = Astro.url.searchParams;
 const cari = (q.get('cari') ?? '').trim().slice(0, 80);
 const lapak = (q.get('lapak') ?? '').trim().slice(0, 80);
+const kondisiMentah = (q.get('kondisi') ?? '').trim().slice(0, 20);
+const kondisi = (PILIHAN_KONDISI.some((k) => k.nilai === kondisiMentah) ? kondisiMentah : '') as
+  | Kondisi
+  | '';
 const halaman = Number.parseInt(q.get('halaman') ?? '1', 10) || 1;
 
-const hasil = katalogUnit({ cari, lapak, halaman });
+const hasil = katalogUnit({ cari, lapak, kondisi: kondisi || undefined, halaman });
 const sellerTersedia = listLapakTersedia();
 const site = ambilSite();
 const waUmum = linkWa(undefined, site.whatsapp, site.nama);
 const sellerDipilih = sellerTersedia.find((l) => l.slug === lapak) ?? null;
-const adaFilter = cari !== '' || lapak !== '';
+const adaFilter = cari !== '' || lapak !== '' || kondisi !== '';
 
 // Kartu katalog tidak punya penanda "Terjual" (lihat DESIGN.md), jadi katalog
 // publik hanya menampilkan unit yang masih tersedia.
@@ -64,7 +69,7 @@ const adaFilter = cari !== '' || lapak !== '';
           {
             adaFilter
               ? `${hasil.total} unit tersedia cocok dengan filter ini.`
-              : 'Ketik nama, merek, atau besaran storage, atau saring dari satu penjual saja.'
+              : 'Ketik nama, merek, atau storage, lalu saring penjual dan kondisi.'
           }
         </p>
       </div>
@@ -93,6 +98,21 @@ const adaFilter = cari !== '' || lapak !== '';
             {sellerTersedia.map((l) => (
               <option value={l.slug} selected={l.slug === lapak}>
                 {l.nama} ({l.jumlah})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div class="sm:w-40">
+          <label for="kondisi" class="sr-only">Saring kondisi</label>
+          <select
+            id="kondisi"
+            name="kondisi"
+            class="target-sentuh w-full rounded-md border border-stone-500 bg-dasar px-3 py-2.5 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none"
+          >
+            <option value="">Semua kondisi</option>
+            {PILIHAN_KONDISI.map((k) => (
+              <option value={k.nilai} selected={k.nilai === kondisi}>
+                {k.label}
               </option>
             ))}
           </select>
@@ -129,6 +149,7 @@ const adaFilter = cari !== '' || lapak !== '';
             jumlahHalaman={hasil.jumlahHalaman}
             cari={cari}
             lapak={lapak}
+            kondisi={kondisi}
           />
         </>
       ) : (

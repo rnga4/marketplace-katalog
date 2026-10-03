@@ -10,12 +10,23 @@ interface Props {
   tombolLabel: string;
   nilai?: Partial<UnitHp>;
   gantiSlug?: boolean;
+  batalHref?: string;
 }
 
-const { csrf, action, tombolLabel, nilai = {}, gantiSlug = true } = Astro.props;
+const {
+  csrf,
+  action,
+  tombolLabel,
+  nilai = {},
+  gantiSlug = true,
+  batalHref = '/admin',
+} = Astro.props;
 const kondisi = (nilai.kondisi ?? 'mulus') as Kondisi;
 const textareaList = (arr?: string[]) => (arr && arr.length ? arr.join('\n') : '');
 const fotoTerpilih = nilai.foto ?? [];
+// URL thumbnail dihitung di server karena hanya server yang tahu varian mana
+// yang benar-benar ada di disk.
+const fotoAwal = fotoTerpilih.map((nama) => ({ nama, thumb: fotoSrc(nama, 'thumb') }));
 ---
 
 <form method="post" action={action} enctype="multipart/form-data" data-simpan="Menyimpan…" class="flex flex-col gap-6">
@@ -130,22 +141,22 @@ Kabel USB-C" class="target-sentuh rounded-md border border-stone-500 bg-dasar px
     </label>
   </fieldset>
 
-  <fieldset class="flex min-w-0 flex-col gap-3">
+  <fieldset
+    class="flex min-w-0 flex-col gap-3"
+    data-foto-editor
+    data-foto-awal={JSON.stringify(fotoAwal)}
+  >
     <legend class="text-sm font-bold text-stone-900">Foto</legend>
 
-    {
-      fotoTerpilih.length > 0 && (
-        <div class="flex flex-wrap gap-2">
-          {
-            fotoTerpilih.map((nama) => (
-              <img src={fotoSrc(nama, 'thumb')} alt="" class="size-20 rounded-md border border-garis bg-stone-100 object-cover" loading="lazy" />
-            ))
-          }
-        </div>
-      )
-    }
+    <ul data-foto-daftar style="display:none" class="flex flex-col gap-2"></ul>
+    <p data-foto-kosong style="display:none" class="text-sm text-stone-600">
+      Belum ada foto. Unggah di bawah.
+    </p>
+    <p data-foto-hint style="display:none" class="text-xs text-stone-600">
+      Foto pertama jadi sampul di katalog. Urutkan atau buang lewat tombol di tiap foto.
+    </p>
 
-    <label class="flex flex-col gap-1.5">
+    <label data-foto-teks class="flex flex-col gap-1.5">
       <span class="text-sm font-medium text-stone-900">Daftar foto (nama file, satu per baris)</span>
       <textarea name="foto" rows="3" class="target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm focus:border-aksi-teks focus:outline-none">{textareaList(fotoTerpilih)}</textarea>
     </label>
@@ -160,7 +171,7 @@ Kabel USB-C" class="target-sentuh rounded-md border border-stone-500 bg-dasar px
     <button type="submit" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800">
       {tombolLabel}
     </button>
-    <a href="/admin" class="target-sentuh inline-flex items-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-stone-900 hover:bg-stone-100">
+    <a href={batalHref} class="target-sentuh inline-flex items-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-stone-900 hover:bg-stone-100">
       Batal
     </a>
   </div>
@@ -199,6 +210,99 @@ Kabel USB-C" class="target-sentuh rounded-md border border-stone-500 bg-dasar px
       setTimeout(() => (tombol.disabled = true), 0);
     });
   }
+  const editor = document.querySelector<HTMLElement>('[data-foto-editor]');
+  const bidang = editor?.querySelector<HTMLTextAreaElement>('textarea[name="foto"]');
+  const daftarEl = editor?.querySelector<HTMLElement>('[data-foto-daftar]');
+  if (editor && bidang && daftarEl) {
+    const kosong = editor.querySelector<HTMLElement>('[data-foto-kosong]');
+    const hint = editor.querySelector<HTMLElement>('[data-foto-hint]');
+    const labelTeks = editor.querySelector<HTMLElement>('[data-foto-teks]');
+    const daftar = JSON.parse(editor.dataset.fotoAwal ?? '[]') as { nama: string; thumb: string }[];
+
+    const simpan = () => {
+      bidang.value = daftar.map((f) => f.nama).join('\n');
+    };
+
+    const tombolAksi = (teks: string, label: string, aksi: () => void) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className =
+        'target-sentuh inline-flex min-w-11 items-center justify-center rounded-md border border-stone-500 bg-dasar px-2 text-xs font-semibold text-stone-900 hover:bg-stone-100';
+      b.textContent = teks;
+      b.setAttribute('aria-label', label);
+      b.addEventListener('click', aksi);
+      return b;
+    };
+
+    const gambar = () => {
+      daftarEl.replaceChildren();
+      if (kosong) kosong.style.display = daftar.length > 0 ? 'none' : 'block';
+      daftar.forEach((foto, i) => {
+        const baris = document.createElement('li');
+        baris.className =
+          'flex flex-wrap items-center gap-2 rounded-md border border-garis bg-dasar p-2';
+        const img = document.createElement('img');
+        img.src = foto.thumb;
+        img.alt = '';
+        img.className =
+          'size-16 shrink-0 rounded-md border border-garis bg-stone-100 object-cover';
+        baris.append(img);
+        if (i === 0) {
+          const sampul = document.createElement('span');
+          sampul.className =
+            'rounded-md border border-aksi-teks bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-aksi-teks';
+          sampul.textContent = 'Sampul';
+          baris.append(sampul);
+        }
+        const aksi = document.createElement('div');
+        aksi.className = 'ml-auto flex flex-wrap items-center justify-end gap-1';
+        if (i > 0) {
+          aksi.append(
+            tombolAksi('Sampul', 'Jadikan foto ini sampul', () => {
+              const pindah = daftar.splice(i, 1)[0]!;
+              daftar.unshift(pindah);
+              simpan();
+              gambar();
+            }),
+            tombolAksi('Naik', 'Pindahkan foto ini ke atas', () => {
+              const atas = daftar[i - 1]!;
+              daftar[i - 1] = daftar[i]!;
+              daftar[i] = atas;
+              simpan();
+              gambar();
+            }),
+          );
+        }
+        if (i < daftar.length - 1) {
+          aksi.append(
+            tombolAksi('Turun', 'Pindahkan foto ini ke bawah', () => {
+              const bawah = daftar[i + 1]!;
+              daftar[i + 1] = daftar[i]!;
+              daftar[i] = bawah;
+              simpan();
+              gambar();
+            }),
+          );
+        }
+        aksi.append(
+          tombolAksi('Buang', 'Buang foto ini dari daftar', () => {
+            daftar.splice(i, 1);
+            simpan();
+            gambar();
+          }),
+        );
+        baris.append(aksi);
+        daftarEl.append(baris);
+      });
+    };
+
+    labelTeks?.style.setProperty('display', 'none');
+    daftarEl.style.display = 'flex';
+    if (hint) hint.style.display = 'block';
+    simpan();
+    gambar();
+  }
+
   addEventListener('pageshow', (e) => {
     if (e.persisted) location.reload();
   });

@@ -8,14 +8,16 @@ interface Props {
   jumlahHalaman: number;
   cari: string;
   lapak: string;
+  kondisi: string;
 }
 
-const { halaman, jumlahHalaman, cari, lapak } = Astro.props;
+const { halaman, jumlahHalaman, cari, lapak, kondisi } = Astro.props;
 
 const tautan = (n: number) => {
   const p = new URLSearchParams();
   if (cari) p.set('cari', cari);
   if (lapak) p.set('lapak', lapak);
+  if (kondisi) p.set('kondisi', kondisi);
   p.set('halaman', String(n));
   // Query sungguhan supaya server merender ulang halaman katalog.
   return `?${p.toString()}`;

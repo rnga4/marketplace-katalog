@@ -6,7 +6,7 @@ import {
   listPengumuman,
   statistikRingkas,
 } from '../lib/db';
-import { linkWa, inisial } from '../data/site';
+import { inisial } from '../data/site';
 import { fotoSrc } from '../lib/foto';
 
 const q = Astro.url.searchParams;
@@ -17,7 +17,6 @@ if (q.has('cari') || q.has('lapak') || q.has('halaman')) {
 }
 
 const site = ambilSite();
-const waUmum = linkWa(undefined, site.whatsapp, site.nama);
 const stat = statistikRingkas();
 const lapak = listLapakTersedia();
 // Beranda cuma menampilkan info terbaru. Arsip lengkap cukup di panel admin.
@@ -39,14 +38,6 @@ const pengumuman = listPengumuman(true).slice(0, 4);
         >
           Lihat katalog
         </a>
-        {waUmum && (
-          <a
-            href={waUmum}
-            class="target-sentuh inline-flex items-center px-1 text-sm font-medium text-aksi-teks underline"
-          >
-            Tanya stok terbaru
-          </a>
-        )}
       </div>
     </div>
   </section>
