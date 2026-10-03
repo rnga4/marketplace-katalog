@@ -6,6 +6,7 @@ import { ambilLapak, type Pengguna } from '../lib/db';
 import { fotoSrc } from '../lib/foto';
 import Kembali from '../components/Kembali.astro';
 import NavBawah from '../components/NavBawah.astro';
+import MenuAkun from '../components/MenuAkun.astro';
 
 interface Props {
   title: string;
@@ -34,60 +35,41 @@ const namaToko = lapak?.nama ?? 'Toko saya';
   <body class="bg-dasar font-sans text-stone-900 antialiased">
     <header class="border-b border-garis bg-dasar">
       <div class="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:px-6 md:flex-row md:items-center md:gap-3">
-        {/* Di mobile baris atas memisah: kembali di kiri, identitas di kanan.
-            Di desktop `contents` melepas pembungkus ini supaya kembali dan nav
-            menempel kiri, sementara identitas didorong ke pojok kanan lewat
-            `ml-auto`. Foto selalu di ujung kanan identitas, namanya di kirinya. */}
         <div class="flex min-w-0 items-center justify-between gap-3 md:contents">
           <Kembali href="/" label="Beranda" statis />
-          <a href="/akun" class="target-sentuh flex min-w-0 items-center gap-2 md:order-2 md:ml-auto">
-            <span class="truncate text-sm font-bold tracking-tight text-stone-900">{namaToko}</span>
-            {lapak?.foto ? (
-              <img
-                src={fotoSrc(lapak.foto, 'thumb')}
-                alt=""
-                width={32}
-                height={32}
-                class="size-8 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
-              />
-            ) : (
-              <span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
-                {sesi.nama.slice(0, 2).toUpperCase()}
-              </span>
-            )}
-          </a>
+          <nav class="hidden flex-wrap items-center gap-1 md:flex" aria-label="Navigasi toko desktop">
+            <a
+              href="/akun"
+              aria-current={aktif === '/akun' ? 'page' : 'false'}
+              class="target-sentuh inline-flex items-center rounded-md px-3 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900 aria-[current=page]:bg-stone-200/60 aria-[current=page]:font-semibold aria-[current=page]:text-stone-900"
+            >
+              Produk saya
+            </a>
+            <a
+              href="/akun/tambah"
+              aria-current={aktif === '/akun/tambah' ? 'page' : 'false'}
+              class="target-sentuh inline-flex items-center rounded-md px-3 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900 aria-[current=page]:bg-stone-200/60 aria-[current=page]:font-semibold aria-[current=page]:text-stone-900"
+            >
+              Tambah produk
+            </a>
+          </nav>
+          <MenuAkun nama={namaToko} foto={lapak?.foto} csrf={csrf} kelas="md:ml-auto" />
         </div>
-        <nav class="flex flex-wrap items-center gap-1" aria-label="Navigasi toko">
+        <nav class="flex flex-wrap items-center gap-1 md:hidden" aria-label="Navigasi toko mobile">
           <a
             href="/akun"
             aria-current={aktif === '/akun' ? 'page' : 'false'}
-            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900 aria-[current=page]:bg-stone-200/60 aria-[current=page]:font-semibold aria-[current=page]:text-stone-900"
           >
             Produk saya
           </a>
           <a
             href="/akun/tambah"
             aria-current={aktif === '/akun/tambah' ? 'page' : 'false'}
-            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
+            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900 aria-[current=page]:bg-stone-200/60 aria-[current=page]:font-semibold aria-[current=page]:text-stone-900"
           >
             Tambah produk
           </a>
-          <a
-            href="/akun/toko"
-            aria-current={aktif === '/akun/toko' ? 'page' : 'false'}
-            class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-aksi-teks"
-          >
-            Setelan toko
-          </a>
-          <form method="post" action="/akun/keluar">
-            <input type="hidden" name="csrf" value={csrf} />
-            <button
-              type="submit"
-              class="target-sentuh inline-flex items-center rounded-md px-2.5 text-xs font-semibold text-stone-900 hover:bg-stone-100 hover:text-red-800"
-            >
-              Keluar
-            </button>
-          </form>
         </nav>
       </div>
     </header>

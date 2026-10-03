@@ -42,39 +42,38 @@ function warna(m: Moderasi): string {
 ---
 
 <AkunLayout title="Produk saya" pengguna={pengguna} notif={notif}>
-  <header class="mb-6">
-    <h1 class="text-xl font-bold tracking-tight text-stone-900">Produk saya</h1>
-    <p class="mt-1 text-sm text-stone-600">
-      Produk baru masuk antrean peninjauan sebelum muncul di katalog. {
-        lapak && <a href={`/lapak/${lapak.slug}`} class="font-medium text-aksi-teks underline">Lihat lapak publik</a>
-      }
-    </p>
+  <header class="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight text-stone-900">Produk saya</h1>
+      <p class="mt-1 text-sm text-stone-600">
+        Produk baru masuk antrean peninjauan sebelum muncul di katalog. {
+          lapak && <a href={`/lapak/${lapak.slug}`} class="font-medium text-aksi-teks underline">Lihat lapak publik</a>
+        }
+      </p>
+    </div>
+    <a href="/akun/tambah" class="target-sentuh inline-flex shrink-0 items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">
+      + Tambah produk
+    </a>
   </header>
 
   {
     semua.length > 0 && (
-      <dl class="mb-6 grid grid-cols-3 gap-2">
-        <div class="rounded-md border border-garis px-3 py-2">
+      <dl class="mb-6 grid grid-cols-3 gap-2 sm:gap-4">
+        <div class="rounded-md border border-garis px-3 py-2 sm:px-4 sm:py-3">
           <dt class="text-xs text-stone-600">Tayang</dt>
-          <dd class="text-lg font-bold text-stone-900">{tayang}</dd>
+          <dd class="text-lg font-bold text-stone-900 sm:text-xl">{tayang}</dd>
         </div>
-        <div class="rounded-md border border-garis px-3 py-2">
+        <div class="rounded-md border border-garis px-3 py-2 sm:px-4 sm:py-3">
           <dt class="text-xs text-stone-600">Menunggu</dt>
-          <dd class="text-lg font-bold text-stone-900">{menunggu}</dd>
+          <dd class="text-lg font-bold text-stone-900 sm:text-xl">{menunggu}</dd>
         </div>
-        <div class="rounded-md border border-garis px-3 py-2">
+        <div class="rounded-md border border-garis px-3 py-2 sm:px-4 sm:py-3">
           <dt class="text-xs text-stone-600">Ditolak</dt>
-          <dd class="text-lg font-bold text-stone-900">{ditolak}</dd>
+          <dd class="text-lg font-bold text-stone-900 sm:text-xl">{ditolak}</dd>
         </div>
       </dl>
     )
   }
-
-  <p class="mb-4">
-    <a href="/akun/tambah" class="target-sentuh inline-flex items-center rounded-md bg-aksi px-4 text-sm font-semibold text-white hover:bg-emerald-800">
-      Tambah produk
-    </a>
-  </p>
 
   {
     semua.length === 0 ? (

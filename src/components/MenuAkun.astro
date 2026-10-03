@@ -1,0 +1,214 @@
+---
+import { inisial } from '../data/site';
+import { fotoSrc } from '../lib/foto';
+
+interface Props {
+  nama: string;
+  foto?: string | null;
+  csrf: string;
+  kelas?: string;
+}
+
+const { nama, foto = null, csrf, kelas = '' } = Astro.props;
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<div class={`relative inline-block text-left ${kelas}`} data-menu-akun-wadah>
+  <button
+    type="button"
+    data-pemicu-menu-akun
+    aria-expanded="false"
+    title={`Akun ${nama}`}
+    aria-label={`Akun ${nama}`}
+    class="group target-sentuh flex min-w-0 items-center gap-1.5 rounded-md py-1 pl-2.5 pr-1.5 text-stone-900 hover:bg-stone-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-aksi-teks aria-[expanded=true]:bg-stone-100"
+  >
+    <span class="truncate text-sm font-bold tracking-tight text-stone-900">{nama}</span>
+    {
+      foto ? (
+        <img
+          src={fotoSrc(foto, 'thumb')}
+          alt=""
+          width={32}
+          height={32}
+          class="size-8 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
+        />
+      ) : (
+        <span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
+          {inisial(nama)}
+        </span>
+      )
+    }
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="size-4 text-stone-500 transition-transform duration-150 group-aria-[expanded=true]:rotate-180"
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  </button>
+
+  <div
+    data-panel-menu-akun
+    class="hidden absolute right-0 top-full mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-md border border-garis bg-dasar p-0 text-stone-900 shadow-xl z-50"
+  >
+    <div class="flex items-center gap-3 border-b border-garis p-3.5">
+      {
+        foto ? (
+          <img
+            src={fotoSrc(foto, 'thumb')}
+            alt=""
+            width={36}
+            height={36}
+            class="size-9 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
+          />
+        ) : (
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
+            {inisial(nama)}
+          </span>
+        )
+      }
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-sm font-bold tracking-tight text-stone-900">{nama}</p>
+        <p class="text-xs text-stone-500">Pemilik toko</p>
+      </div>
+    </div>
+    <div class="flex flex-col gap-0.5 p-1.5">
+      <a
+        href="/akun"
+        aria-current={path === '/akun' ? 'page' : false}
+        class="target-sentuh flex items-center gap-2.5 rounded-md px-3 text-sm font-medium text-stone-700 hover:bg-stone-100 hover:text-stone-900 aria-[current=page]:bg-stone-200/60 aria-[current=page]:font-semibold aria-[current=page]:text-stone-900"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="size-4 text-stone-500"
+          aria-hidden="true"
+        >
+          <path d="M20 7h-9" />
+          <path d="M14 17H5" />
+          <circle cx="17" cy="17" r="3" />
+          <circle cx="7" cy="7" r="3" />
+        </svg>
+        Produk saya
+      </a>
+      <a
+        href="/akun/tambah"
+        aria-current={path === '/akun/tambah' ? 'page' : false}
+        class="target-sentuh flex items-center gap-2.5 rounded-md px-3 text-sm font-medium text-stone-700 hover:bg-stone-100 hover:text-stone-900 aria-[current=page]:bg-stone-200/60 aria-[current=page]:font-semibold aria-[current=page]:text-stone-900"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="size-4 text-stone-500"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
+        Tambah produk
+      </a>
+      <a
+        href="/akun/toko"
+        aria-current={path === '/akun/toko' ? 'page' : false}
+        class="target-sentuh flex items-center gap-2.5 rounded-md px-3 text-sm font-medium text-stone-700 hover:bg-stone-100 hover:text-stone-900 aria-[current=page]:bg-stone-200/60 aria-[current=page]:font-semibold aria-[current=page]:text-stone-900"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="size-4 text-stone-500"
+          aria-hidden="true"
+        >
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+        </svg>
+        Setelan toko
+      </a>
+      <div class="my-1 border-t border-garis"></div>
+      <form method="post" action="/akun/keluar">
+        <input type="hidden" name="csrf" value={csrf} />
+        <button
+          type="submit"
+          class="target-sentuh flex w-full items-center gap-2.5 rounded-md px-3 text-sm font-semibold text-red-700 hover:bg-red-50 hover:text-red-800 cursor-pointer"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-4 text-red-600"
+            aria-hidden="true"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Keluar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setupMenuAkun() {
+    const wadahs = document.querySelectorAll<HTMLElement>('[data-menu-akun-wadah]');
+    for (const wadah of wadahs) {
+      const pemicu = wadah.querySelector<HTMLButtonElement>('[data-pemicu-menu-akun]');
+      const panel = wadah.querySelector<HTMLElement>('[data-panel-menu-akun]');
+      if (!pemicu || !panel) continue;
+
+      if (wadah.dataset.siap === 'true') continue;
+      wadah.dataset.siap = 'true';
+
+      const buka = () => {
+        panel.classList.remove('hidden');
+        pemicu.setAttribute('aria-expanded', 'true');
+      };
+      const tutup = () => {
+        panel.classList.add('hidden');
+        pemicu.setAttribute('aria-expanded', 'false');
+      };
+
+      pemicu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const terbuka = !panel.classList.contains('hidden');
+        if (terbuka) tutup();
+        else buka();
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!wadah.contains(e.target as Node)) {
+          tutup();
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          tutup();
+        }
+      });
+    }
+  }
+
+  setupMenuAkun();
+  document.addEventListener('astro:page-load', setupMenuAkun);
+</script>

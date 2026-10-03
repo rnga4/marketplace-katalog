@@ -4,6 +4,7 @@ import { inisial } from '../data/site';
 import { bacaSesi, COOKIE_ADMIN, COOKIE_AKUN } from '../lib/auth';
 import { fotoSrc } from '../lib/foto';
 import Kembali from './Kembali.astro';
+import MenuAkun from './MenuAkun.astro';
 
 interface Props {
   /** Halaman tujuan tombol kembali. Null di Beranda, karena tidak ada halaman sebelumnya. */
@@ -78,27 +79,7 @@ const labelAkun = tokonya?.nama ?? 'Toko saya';
       {
         !admin &&
           (sesiSeller ? (
-            <a
-              href={hrefAkun}
-              title={`Akun ${labelAkun}`}
-              aria-label={`Akun ${labelAkun}`}
-              class="target-sentuh flex min-w-0 items-center gap-2 rounded-md py-1 pl-2 pr-1 hover:bg-stone-100"
-            >
-              <span class="truncate text-sm font-bold tracking-tight text-stone-900">{labelAkun}</span>
-              {tokonya?.foto ? (
-                <img
-                  src={fotoSrc(tokonya.foto, 'thumb')}
-                  alt=""
-                  width={32}
-                  height={32}
-                  class="size-8 shrink-0 rounded-md border border-garis bg-stone-100 object-cover"
-                />
-              ) : (
-                <span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-stone-900 font-sans text-xs font-bold text-white">
-                  {inisial(labelAkun)}
-                </span>
-              )}
-            </a>
+            <MenuAkun nama={labelAkun} foto={tokonya?.foto} csrf={sesiSeller.csrf} />
           ) : (
             <a
               href={hrefAkun}
