@@ -15,8 +15,12 @@ interface Props {
 const { title } = Astro.props;
 const notif = Astro.props.notif ?? null;
 const kembali = Astro.props.kembali ?? null;
-const sesi = bacaSesi(Astro.cookies);
-const totalAntrean = jumlahAntrean().menunggu + jumlahSellerMenunggu();
+const sesi = await bacaSesi(Astro.cookies);
+// Dua angka ini datang dari dua tabel berbeda, jadi dijumlahkan setelah keduanya
+// selesai — bukan `await jumlahAntrean().menunggu`, yang akan menunggu angka
+// biasa dan tidak menunggu query-nya.
+const [antreanUnit, antreanSeller] = await Promise.all([jumlahAntrean(), jumlahSellerMenunggu()]);
+const totalAntrean = antreanUnit.menunggu + antreanSeller;
 ---
 
 <!doctype html>

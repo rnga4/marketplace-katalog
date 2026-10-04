@@ -4,7 +4,7 @@ import { teksForm } from '../../lib/forms';
 import { bacaSesi } from '../../lib/auth';
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
-  const sesi = bacaSesi(cookies);
+  const sesi = await bacaSesi(cookies);
   const fd = await request.formData();
   if (sesi && teksForm(fd, 'csrf') === sesi.csrf) {
     cookies.set(COOKIE_ADMIN, '', { path: '/', maxAge: 0, httpOnly: true, sameSite: 'lax' });

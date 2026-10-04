@@ -21,7 +21,7 @@ if (Astro.request.method === 'POST') {
   } else {
     const ip = ipPengguna(Astro.request, Astro.clientAddress);
     const kunci: Kunci = [`daftar:ip:${ip}`];
-    if (terkunci(kunci)) {
+    if (await terkunci(kunci)) {
       galat = 'Terlalu banyak pendaftaran dari jaringan ini. Coba lagi 15 menit lagi.';
     } else {
       const namaToko = teksForm(fd, 'namaToko');
@@ -37,15 +37,15 @@ if (Astro.request.method === 'POST') {
         galat = 'Kata sandi minimal 8 karakter.';
       } else if (sandi.length > 200) {
         galat = 'Kata sandi maksimal 200 karakter.';
-      } else if (adaPengguna(whatsapp)) {
+      } else if (await adaPengguna(whatsapp)) {
         galat = 'Nomor ini sudah dipakai akun lain. Satu seller satu nomor, satu akun.';
       } else {
         await sleep(300);
         try {
-          const pengguna = createPengguna({ nomor: whatsapp, nama: namaToko, kataSandi: sandi });
-          simpanLapak(pengguna.id, { nama: namaToko, whatsapp });
+          const pengguna = await createPengguna({ nomor: whatsapp, nama: namaToko, kataSandi: sandi });
+          await simpanLapak(pengguna.id, { nama: namaToko, whatsapp });
           Astro.cookies.set(COOKIE_AKUN, '', { path: '/', maxAge: 0 });
-          catatGagal(kunci);
+          await catatGagal(kunci);
           return Astro.redirect(pengguna.status === 'aktif' ? '/masuk?daftar=1' : '/masuk?daftar=1&tunggu=1');
         } catch (err) {
           galat = err instanceof Error ? err.message : 'Gagal membuat akun.';

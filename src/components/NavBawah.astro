@@ -4,12 +4,12 @@ import { ambilLapak } from '../lib/db';
 import { fotoSrc } from '../lib/foto';
 import { inisial } from '../data/site';
 
-const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
-const seller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const admin = await bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
+const seller = await bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 
 /* Tab Akun menampilkan identitas seller supaya bar bawah langsung menjawab
    "akun siapa yang sedang masuk"; pengunjung tanpa foto tetap ikon orang. */
-const tokonya = seller?.penggunaId ? ambilLapak(seller.penggunaId) : null;
+const tokonya = seller?.penggunaId ? await ambilLapak(seller.penggunaId) : null;
 
 const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
 const diKatalog = path === '/katalog' || path.startsWith('/hp/') || path.startsWith('/lapak/');

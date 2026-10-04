@@ -11,11 +11,11 @@ interface Props {
   kembali?: { href: string; label: string } | null;
 }
 
-const site = ambilSite();
+const site = await ambilSite();
 const kembali = Astro.props.kembali ?? null;
 
-const admin = bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
-const sesiSeller = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const admin = await bacaSesi(Astro.cookies, COOKIE_ADMIN, 'admin');
+const sesiSeller = await bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 
 /* Nav penuh, bukan hamburger. Empat item muat tanpa tekanan di lebar desktop,
    dan menyembunyikannya di balik tombol berarti menambah satu klik ke setiap
@@ -30,7 +30,7 @@ const NAV = [
    pojok kanan atas pada semua lebar: seller melihat nama dan foto tokonya
    (atau inisial kalau belum unggah), pengunjung melihat ikon orang. Tautan teks
    hanya tersisa untuk admin, karena "Kelola" bukan akun pribadi. */
-const tokonya = sesiSeller?.penggunaId ? ambilLapak(sesiSeller.penggunaId) : null;
+const tokonya = sesiSeller?.penggunaId ? await ambilLapak(sesiSeller.penggunaId) : null;
 const hrefAkun = sesiSeller ? '/akun' : '/masuk';
 const labelAkun = tokonya?.nama ?? 'Toko saya';
 ---
@@ -79,7 +79,7 @@ const labelAkun = tokonya?.nama ?? 'Toko saya';
       {
         !admin &&
           (sesiSeller ? (
-            <MenuAkun nama={labelAkun} foto={tokonya?.foto} csrf={sesiSeller.csrf} />
+            <MenuAkun nama={labelAkun} foto={tokonya?.foto} csrf={sesiSeller.csrf} lapakSlug={tokonya?.slug} />
           ) : (
             <a
               href={hrefAkun}

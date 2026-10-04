@@ -5,7 +5,7 @@ import { bacaSesi } from '../../lib/auth';
 import { cekCsrf, teksForm } from '../../lib/forms';
 import { normalisasiWa, waValid } from '../../data/site';
 
-const sesi = bacaSesi(Astro.cookies);
+const sesi = await bacaSesi(Astro.cookies);
 let galat: string | null = null;
 
 if (Astro.request.method === 'POST') {
@@ -21,7 +21,7 @@ if (Astro.request.method === 'POST') {
   } else if (!nama) {
     galat = 'Nama toko tidak boleh kosong.';
   } else {
-    simpanSite({
+    await simpanSite({
       nama,
       namaLengkap: teksForm(fd, 'namaLengkap') || nama,
       tagline: teksForm(fd, 'tagline'),
@@ -34,7 +34,7 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-const site = ambilSite();
+const site = await ambilSite();
 const csrf = sesi?.csrf ?? '';
 const input =
   'target-sentuh rounded-md border border-stone-500 bg-dasar px-3 text-sm text-stone-900 focus:border-aksi-teks focus:outline-none';

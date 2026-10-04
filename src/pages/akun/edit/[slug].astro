@@ -8,11 +8,11 @@ import { unitDariForm, prosesFotoUpload, saringFoto } from '../../../lib/formUni
 import { hapusFoto } from '../../../lib/foto';
 
 const pengguna = Astro.locals.pengguna!;
-const sesi = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const sesi = await bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 const csrf = sesi?.csrf ?? '';
 
 const slug = Astro.params.slug ?? '';
-const unit = getUnit(slug);
+const unit = await getUnit(slug);
 
 // Unit milik orang lain atau milik admin tidak boleh dibuka lewat URL ini.
 if (!unit || unit.pemilikId !== pengguna.id) {
@@ -36,7 +36,7 @@ if (Astro.request.method === 'POST') {
   } else {
     try {
       isi.foto = saringFoto(await prosesFotoUpload(fd, slug, isi.foto ?? []), slug);
-      updateUnit(slug, isi);
+      await updateUnit(slug, isi);
       // Foto yang dibuang dari daftar ikut dihapus dari disk supaya tidak menumpuk.
       for (const f of unit.foto) if (!isi.foto.includes(f)) hapusFoto(f);
       return Astro.redirect('/akun?notif=diubah');

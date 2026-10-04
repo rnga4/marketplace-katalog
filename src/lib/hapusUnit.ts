@@ -6,10 +6,10 @@ import { hapusFoto } from './foto';
  * pemanggil di area admin dan seller supaya tidak ada yang lupa membersihkan
  * file atau baris statistik.
  */
-export function hapusUnit(slug: string): void {
-  const unit = getUnit(slug);
+export async function hapusUnit(slug: string): Promise<void> {
+  const unit = await getUnit(slug);
   if (!unit) return;
   for (const nama of unit.foto) hapusFoto(nama);
-  deleteUnit(slug);
-  hapusKlik(slug);
+  await deleteUnit(slug);
+  await hapusKlik(slug);
 }

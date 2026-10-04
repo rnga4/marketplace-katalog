@@ -33,16 +33,16 @@ if (Astro.request.method === 'POST') {
     // cycling 5 nomor berbeda per 15 menit untuk menebak tanpa pernah kena
     // batas, karena kuncinya ikut berubah tiap nomor.
     const kunci: Kunci = nomor ? [`seller:ip:${ip}`, `seller:nomor:${nomor}`] : [`seller:ip:${ip}`];
-    const dikunci = terkunci(kunci);
-    const pengguna = !dikunci && nomor ? ambilPenggunaByNomor(nomor) : null;
+    const dikunci = await terkunci(kunci);
+    const pengguna = !dikunci && nomor ? await ambilPenggunaByNomor(nomor) : null;
     const sandiBenar = !!pengguna && (await cekKataSandiPengguna(pengguna.id, sandi));
     const benar = sandiBenar && pengguna?.status === 'aktif';
     await sleep(450);
     if (benar && pengguna) {
-      bersihkan(kunci);
+      await bersihkan(kunci);
       const aman = cookieAman(Astro.request, Astro.url);
       Astro.cookies.set('hp_csrf', '', { path: '/', maxAge: 0 });
-      Astro.cookies.set(COOKIE_AKUN, buatToken(pengguna.id, 'seller', buatCsrf(), pengguna.sesiVersi), {
+      Astro.cookies.set(COOKIE_AKUN, await buatToken(pengguna.id, 'seller', buatCsrf(), pengguna.sesiVersi), {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
@@ -53,7 +53,7 @@ if (Astro.request.method === 'POST') {
     } else {
       // Kata sandi benar tapi akun belum/tidak disetujui bukan percobaan gagal,
       // jadi jangan dihitung ke batas rate limit.
-      if (!dikunci && !sandiBenar) catatGagal(kunci);
+      if (!dikunci && !sandiBenar) await catatGagal(kunci);
       if (dikunci) {
         galat = 'Terlalu banyak percobaan login. Coba lagi 15 menit lagi.';
       } else if (sandiBenar && pengguna?.status === 'tunggu') {

@@ -30,11 +30,21 @@ export function unitDariForm(fd: FormData): UnitInput {
 }
 
 /** Slugs diisi manual, atau otomatis dari nama. Kembalikan null saat slug ada yg sama. */
-export async function slugDariForm(fd: FormData, nama: string, cekBentrok: (s: string) => boolean): Promise<string | null> {
+/**
+ * `cekBentrok` boleh async karena pemanggilnya menanyakan database apakah slug
+ * sudah dipakai — pemeriksaan itu asynchronous sejak lapisan data pindah ke
+ * Postgres. Pokoknya slug tidak boleh double, jadi nilainya ditunggu sebelum
+ * dipakai, bukan dibiarkan jadi Promise yang selalu bernilai benar.
+ */
+export async function slugDariForm(
+  fd: FormData,
+  nama: string,
+  cekBentrok: (s: string) => boolean | Promise<boolean>,
+): Promise<string | null> {
   let slug = teksForm(fd, 'slug').toLowerCase();
   if (!slug) slug = slugify(nama);
   if (!slugValid(slug)) return null;
-  if (cekBentrok(slug)) return null;
+  if (await cekBentrok(slug)) return null;
   return slug;
 }
 

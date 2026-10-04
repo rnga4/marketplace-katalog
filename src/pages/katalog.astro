@@ -15,9 +15,9 @@ const kondisi = (PILIHAN_KONDISI.some((k) => k.nilai === kondisiMentah) ? kondis
   | '';
 const halaman = Number.parseInt(q.get('halaman') ?? '1', 10) || 1;
 
-const hasil = katalogUnit({ cari, lapak, kondisi: kondisi || undefined, halaman });
-const sellerTersedia = listLapakTersedia();
-const site = ambilSite();
+const hasil = await katalogUnit({ cari, lapak, kondisi: kondisi || undefined, halaman });
+const sellerTersedia = await listLapakTersedia();
+const site = await ambilSite();
 const waUmum = linkWa(undefined, site.whatsapp, site.nama);
 const sellerDipilih = sellerTersedia.find((l) => l.slug === lapak) ?? null;
 const adaFilter = cari !== '' || lapak !== '' || kondisi !== '';

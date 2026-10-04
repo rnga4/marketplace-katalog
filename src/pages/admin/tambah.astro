@@ -6,7 +6,7 @@ import { bacaSesi } from '../../lib/auth';
 import { cekCsrf } from '../../lib/forms';
 import { unitDariForm, slugDariForm, prosesFotoUpload } from '../../lib/formUnit';
 
-const sesi = bacaSesi(Astro.cookies);
+const sesi = await bacaSesi(Astro.cookies);
 const csrf = sesi?.csrf ?? '';
 
 let galat: string | null = null;
@@ -19,7 +19,7 @@ if (Astro.request.method === 'POST') {
   }
   const unit = unitDariForm(fd);
   nilaiForm = unit;
-  const slug = await slugDariForm(fd, unit.nama, (s) => !!getUnit(s));
+  const slug = await slugDariForm(fd, unit.nama, async (s) => !!(await getUnit(s)));
   if (!unit.harga || unit.harga <= 0) {
     galat = 'Harga wajib diisi dan lebih dari 0.';
   } else if (!slug) {
@@ -27,7 +27,7 @@ if (Astro.request.method === 'POST') {
   } else {
     try {
       unit.foto = await prosesFotoUpload(fd, slug, unit.foto ?? []);
-      createUnit(slug, unit);
+      await createUnit(slug, unit);
       return Astro.redirect('/admin?notif=tersimpan');
     } catch (err) {
       galat = err instanceof Error ? err.message : 'Gagal memproses foto atau menyimpan unit.';

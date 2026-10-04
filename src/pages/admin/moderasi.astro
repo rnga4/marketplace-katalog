@@ -18,12 +18,12 @@ import { waValid } from '../../data/site';
 import { cekCsrf, teksForm, NOTIF } from '../../lib/forms';
 import { bacaSesi } from '../../lib/auth';
 
-const sesi = bacaSesi(Astro.cookies);
+const sesi = await bacaSesi(Astro.cookies);
 const csrf = sesi?.csrf ?? '';
 
 const tabParam = Astro.url.searchParams.get('tab');
 const tab: Moderasi = tabParam === 'tolak' || tabParam === 'tayang' ? tabParam : 'menunggu';
-const jumlah = jumlahAntrean();
+const jumlah = await jumlahAntrean();
 
 let notif = Astro.url.searchParams.get('notif');
 
@@ -35,13 +35,13 @@ if (Astro.request.method === 'POST') {
     const aksi = teksForm(fd, 'aksi');
 
     if (aksi === 'auto_acc') {
-      simpanAutoAcc(teksForm(fd, 'on') === '1');
+      await simpanAutoAcc(teksForm(fd, 'on') === '1');
       return Astro.redirect('/admin/moderasi?notif=autoacc');
     }
     if (aksi === 'acc_seller' || aksi === 'tolak_seller') {
       const id = Number(teksForm(fd, 'id'));
       if (Number.isInteger(id) && id > 0) {
-        setStatusSeller(id, aksi === 'acc_seller' ? 'aktif' : 'tolak');
+        await setStatusSeller(id, aksi === 'acc_seller' ? 'aktif' : 'tolak');
       }
       return Astro.redirect(`/admin/moderasi?notif=${aksi === 'acc_seller' ? 'selleraktif' : 'sellertolak'}`);
     }
@@ -51,19 +51,27 @@ if (Astro.request.method === 'POST') {
 
     // Hanya unit milik seller yang boleh diputuskan di halaman ini. Unit milik
     // admin tidak punya moderasi dan tidak boleh bisa ditolak dari sini.
-    const baris = listAntrean('menunggu').find((u) => u.slug === slug)
-      ?? listAntrean('tolak').find((u) => u.slug === slug)
-      ?? listAntrean('tayang').find((u) => u.slug === slug);
+    // Ambil semua status sekali, lalu cari di dalamnya. Versi lama memanggil
+    // listAntrean tiga kali berturutan, jadi satu keputusan moderasi menahan
+    // tiga query.
+    const semuaAntrean = (
+      await Promise.all([
+        listAntrean('menunggu'),
+        listAntrean('tolak'),
+        listAntrean('tayang'),
+      ])
+    ).flat();
+    const baris = semuaAntrean.find((u) => u.slug === slug);
 
     if (!baris || baris.pemilikId === null) {
       return Astro.redirect('/admin/moderasi');
     }
     if (aksi === 'terima') {
-      setModerasi(slug, 'tayang');
+      await setModerasi(slug, 'tayang');
       return Astro.redirect(`/admin/moderasi?notif=${baris.moderasi === 'tolak' ? 'diterima lagi' : 'diterima'}`);
     }
     if (aksi === 'tolak') {
-      setModerasi(slug, 'tolak', alasan || 'Tidak sesuai ketentuan katalog.');
+      await setModerasi(slug, 'tolak', alasan || 'Tidak sesuai ketentuan katalog.');
       return Astro.redirect('/admin/moderasi?notif=ditolak');
     }
     return Astro.redirect(`/admin/moderasi?tab=${baris.moderasi}`);
@@ -71,9 +79,9 @@ if (Astro.request.method === 'POST') {
 }
 
 const infoNotif = notif ? NOTIF[notif] ?? null : null;
-const autoAcc = ambilAutoAcc();
-const sellerMenunggu = listSellerMenunggu();
-const antrean = listAntrean(tab);
+const autoAcc = await ambilAutoAcc();
+const sellerMenunggu = await listSellerMenunggu();
+const antrean = await listAntrean(tab);
 const tabLabel: Record<Moderasi, string> = { menunggu: 'Menunggu', tayang: 'Tayang', tolak: 'Ditolak' };
 ---
 

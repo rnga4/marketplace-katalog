@@ -12,7 +12,7 @@ const csrf = buatCsrf();
 let galat: string | null = null;
 let masuk = false;
 
-const admin = ambilAdmin();
+const admin = await ambilAdmin();
 
 if (Astro.request.method === 'POST') {
   const fd = await Astro.request.formData();
@@ -22,14 +22,14 @@ if (Astro.request.method === 'POST') {
   } else {
     const ip = ipPengguna(Astro.request, Astro.clientAddress);
     const kunci: Kunci = [`admin:ip:${ip}`];
-    const dikunci = terkunci(kunci);
+    const dikunci = await terkunci(kunci);
     const benar = !dikunci && (await cekKataSandi(teksForm(fd, 'kataSandi')));
     await sleep(450);
     if (benar) {
-      bersihkan(kunci);
+      await bersihkan(kunci);
       const aman = cookieAman(Astro.request, Astro.url);
       Astro.cookies.set('hp_csrf', '', { path: '/', maxAge: 0 });
-      Astro.cookies.set(COOKIE_ADMIN, buatToken(admin!.id, 'admin', buatCsrf(), admin!.sesiVersi), {
+      Astro.cookies.set(COOKIE_ADMIN, await buatToken(admin!.id, 'admin', buatCsrf(), admin!.sesiVersi), {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
@@ -38,7 +38,7 @@ if (Astro.request.method === 'POST') {
       });
       masuk = true;
     } else {
-      if (!dikunci) catatGagal(kunci);
+      if (!dikunci) await catatGagal(kunci);
       galat = dikunci ? 'Terlalu banyak percobaan. Coba lagi 15 menit lagi.' : 'Kata sandi salah.';
     }
   }

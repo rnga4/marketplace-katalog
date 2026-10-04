@@ -5,21 +5,21 @@ import { rupiah, gabung } from '../../lib/format';
 
 const BOT = /bot|crawl|spider|preview|facebookexternalhit|whatsapp/i;
 
-export const GET: APIRoute = ({ params, request, site, redirect }) => {
+export const GET: APIRoute = async ({ params, request, site, redirect }) => {
   const slug = params.slug ?? '';
   // Sama seperti halaman detail, unit yang belum lolos review tidak dialihkan
   // ke WhatsApp siapa pun.
-  const ditemukan = getUnit(slug);
+  const ditemukan = await getUnit(slug);
   if (!ditemukan || ditemukan.moderasi !== 'tayang') return redirect('/', 302);
   const unit = ditemukan;
 
-  const toko = ambilSite();
+  const toko = await ambilSite();
   const url = urlAbsolut(`/hp/${unit.slug}`, site);
   const pesan = `Halo, saya tertarik dengan ${unit.nama} (${gabung([unit.kapasitas, unit.warna])}), ${rupiah(unit.harga)}. Masih tersedia?\n${url}`;
-  const tujuan = linkWa(pesan, waKontak(unit, toko.whatsapp), toko.nama);
+  const tujuan = linkWa(pesan, await waKontak(unit, toko.whatsapp), toko.nama);
   if (!tujuan) return redirect(`/hp/${unit.slug}`, 302);
 
-  if (!BOT.test(request.headers.get('user-agent') ?? '')) catatKlik(unit.slug);
+  if (!BOT.test(request.headers.get('user-agent') ?? '')) await catatKlik(unit.slug);
   return redirect(tujuan, 302);
 };
 

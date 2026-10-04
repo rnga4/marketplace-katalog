@@ -12,7 +12,7 @@ import {
 import { bacaSesi } from '../../lib/auth';
 import { cekCsrf, teksForm, checkboxOn, NOTIF } from '../../lib/forms';
 
-const sesi = bacaSesi(Astro.cookies);
+const sesi = await bacaSesi(Astro.cookies);
 const csrf = sesi?.csrf ?? '';
 
 let galat: string | null = null;
@@ -29,13 +29,13 @@ if (Astro.request.method === 'POST') {
   const id = Number.parseInt(teksForm(fd, 'id'), 10) || 0;
 
   if (aksi === 'hapus') {
-    if (id && ambilPengumuman(id)) hapusPengumuman(id);
+    if (id && await ambilPengumuman(id)) await hapusPengumuman(id);
     return Astro.redirect('/admin/pengumuman?notif=pengumumanhapus');
   }
 
   if (aksi === 'aktif') {
-    const p = id ? ambilPengumuman(id) : null;
-    if (p) setPengumumanAktif(id, !p.aktif);
+    const p = id ? await ambilPengumuman(id) : null;
+    if (p) await setPengumumanAktif(id, !p.aktif);
     return Astro.redirect('/admin/pengumuman?notif=pengumumanstatus');
   }
 
@@ -54,7 +54,7 @@ if (Astro.request.method === 'POST') {
     galat = `Isi pengumuman maksimal ${MAKS_ISI_PENGUMUMAN} huruf.`;
   } else {
     try {
-      simpanPengumuman({ id: id || undefined, judul, isi, aktif });
+      await simpanPengumuman({ id: id || undefined, judul, isi, aktif });
       return Astro.redirect('/admin/pengumuman?notif=pengumumansimpan');
     } catch (err) {
       galat = err instanceof Error ? err.message : 'Gagal menyimpan pengumuman.';
@@ -64,13 +64,13 @@ if (Astro.request.method === 'POST') {
 
 const mintaEdit = Number.parseInt(Astro.url.searchParams.get('edit') ?? '', 10) || 0;
 const mintaHapus = Number.parseInt(Astro.url.searchParams.get('hapus') ?? '', 10) || 0;
-const akanHapus = mintaHapus ? ambilPengumuman(mintaHapus) : null;
-const sedangEdit = mintaEdit ? ambilPengumuman(mintaEdit) : null;
+const akanHapus = mintaHapus ? await ambilPengumuman(mintaHapus) : null;
+const sedangEdit = mintaEdit ? await ambilPengumuman(mintaEdit) : null;
 
 const nilai =
   nilaiTerkirim ?? sedangEdit ?? { id: 0, judul: '', isi: '', aktif: true };
 
-const daftar = listPengumuman();
+const daftar = await listPengumuman();
 const infoNotif = galat ? { jenis: 'err' as const, teks: galat } : notif ? NOTIF[notif] ?? null : null;
 
 const input =

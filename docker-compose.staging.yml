@@ -1,0 +1,58 @@
+# Lapisan tambahan untuk menguji perubahan sebelum menyentuh stack yang melayani
+# orang. Dipakai bersama compose utama:
+#
+#   docker compose -p hpstaging -f docker-compose.yml -f docker-compose.staging.yml up -d --build
+#
+# Yang dibedakan: nama container, nama volume, dan port. Semuanya terpisah, jadi
+# container produksi tidak tersentuh dan tidak ada yang bentrok nama.
+#
+# Port Postgres dipetakan ke 127.0.0.1 supaya skrip migrasi di host bisa
+# menyambung. Diasumsikan hanya loopback, jadi tidak benar-benar terbuka ke
+# jaringan — tetap pakai firewall atau tidak sama sekali kalau ragu.
+
+name: hpstaging
+
+services:
+  db:
+    container_name: hp-staging-db
+    volumes:
+      - staging-db-data:/var/lib/postgresql/data
+      - ./docker/postgres/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+    ports:
+      - "127.0.0.1:55432:5432"
+
+  app:
+    container_name: hp-staging-app
+    # Tag image sendiri. Tanpa ini, build staging menimpa
+    # handphone-second-app:latest, dan `docker compose up -d` untuk produksi
+    # lalu diam-diam memakai hasil build staging.
+    image: handphone-second-app:staging
+    build:
+      context: .
+      target: app
+      args:
+        # Astro `security.checkOrigin` membandingkan Origin kiriman POST
+        # dengan SITE_URL hasil build. Kalau dibiarkan ke default 8096, semua
+        # POST di staging kena 403 karena situsnya dilayani di 8097.
+        SITE_URL: http://localhost:8097
+        SECURITY_ALLOWED_HOST: localhost
+    environment:
+      # Host-nya "db" tetap sama karena kedua file compose memakai network
+      # internal yang sama; yang dipetakan ke host hanya port untuk migrasi.
+      SESSION_SECRET: ""
+    volumes:
+      - ./data:/data
+
+  web:
+    container_name: hp-staging-web
+    image: handphone-second-web:staging
+    volumes:
+      - ./data/foto:/usr/share/nginx/foto:ro
+    # `ports` dari compose utama ikut ter-merge kalau tidak dikosongkan dulu,
+    # dan staging akan ikut berebut port 8096 milik produksi. `!override`
+    # menggantinya utuh, bukan menyambungnya.
+    ports: !override
+      - "127.0.0.1:8097:80"
+
+volumes:
+  staging-db-data:

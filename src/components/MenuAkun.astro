@@ -6,10 +6,11 @@ interface Props {
   nama: string;
   foto?: string | null;
   csrf: string;
+  lapakSlug?: string | null;
   kelas?: string;
 }
 
-const { nama, foto = null, csrf, kelas = '' } = Astro.props;
+const { nama, foto = null, csrf, lapakSlug = null, kelas = '' } = Astro.props;
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 ---
 
@@ -140,6 +141,31 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
         </svg>
         Setelan toko
       </a>
+      {
+        lapakSlug && (
+          <a
+            href={`/lapak/${lapakSlug}`}
+            target="_blank"
+            class="target-sentuh flex items-center gap-2.5 rounded-md px-3 text-sm font-medium text-stone-700 hover:bg-stone-100 hover:text-stone-900"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-4 text-stone-500"
+              aria-hidden="true"
+            >
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            Lihat lapak publik
+          </a>
+        )
+      }
       <div class="my-1 border-t border-garis"></div>
       <form method="post" action="/akun/keluar">
         <input type="hidden" name="csrf" value={csrf} />

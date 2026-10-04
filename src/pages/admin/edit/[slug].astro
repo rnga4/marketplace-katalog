@@ -8,10 +8,10 @@ import { cekCsrf } from '../../../lib/forms';
 import { unitDariForm, prosesFotoUpload } from '../../../lib/formUnit';
 import { hapusFoto } from '../../../lib/foto';
 
-const sesi = bacaSesi(Astro.cookies);
+const sesi = await bacaSesi(Astro.cookies);
 const csrf = sesi?.csrf ?? '';
 const slug = Astro.params.slug ?? '';
-const unit = getUnit(slug);
+const unit = await getUnit(slug);
 
 let galat: string | null = null;
 let nilaiForm: Partial<import('../../../lib/db').UnitHp> | undefined = unit ?? undefined;
@@ -30,7 +30,7 @@ if (!unit) {
     nilaiForm = { ...unit, ...nilai, slug };
   } else try {
     nilai.foto = await prosesFotoUpload(fd, slug, nilai.foto ?? []);
-    updateUnit(slug, nilai);
+    await updateUnit(slug, nilai);
     for (const f of unit.foto) if (!nilai.foto.includes(f)) hapusFoto(f);
     return Astro.redirect('/admin?notif=tersimpan');
   } catch (err) {

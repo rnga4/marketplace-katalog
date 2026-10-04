@@ -10,18 +10,22 @@ if [ "$SEED_DEMO" = "1" ] && [ -d /seed-foto ] && [ -n "$(ls -A /seed-foto 2>/de
   echo "[entrypoint] seed-foto disalin ke $DATA_DIR/foto/"
 fi
 
-# Rahasia sesi stabil antar-restart, bila belum diatur dari env.
-if [ -z "$SESSION_SECRET" ]; then
-  if [ -f "$DATA_DIR/.secret" ]; then
-    SESSION_SECRET=$(cat "$DATA_DIR/.secret")
-  else
-    SESSION_SECRET=$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 64)
-    echo "$SESSION_SECRET" > "$DATA_DIR/.secret"
-    chmod 600 "$DATA_DIR/.secret"
-    echo "[entrypoint] SESSION_SECRET dibuat baru di $DATA_DIR/.secret"
-  fi
-  export SESSION_SECRET
-fi
+# Rahasia sesi TIDAK lagi dibuat di sini.
+#
+# Dulu blok ini menulis data/.secret dan mengirimkannya lewat environment,
+# sementara aplikasi juga menyimpannya di baris `session_secret` pada database.
+# Dua sumber kebenaran untuk satu nilai, dan keduanya sudah berbeda satu sama
+# lain di server ini: yang di file menandatangani sesi yang benar-benar aktif,
+# yang di database sudah basi. Kalau baris database ikut disalin apa adanya,
+# semua orang yang sedang login akan diminta login ulang.
+#
+# Sekarang Postgres yang memegang satu-satunya nilai, diambil sekali oleh
+# `siapkanDatabase()` lalu disimpan di memori proses. Isi data/.secret lama
+# sudah disalin ke sana saat migrasi, dan file-nya boleh dibiarkan atau
+# dihapus tanpa efek apa pun.
+#
+# SESSION_SECRET dari environment tetap jadi pilihan pertama kalau diisi,
+# untuk berkas konfigurasi yang dikelola di luar Compose.
 
 # Beri hak tulis ke user `node` (uid 1000) untuk data.
 chown -R node:node "$DATA_DIR"

@@ -8,7 +8,7 @@ import KondisiBadge from '../../components/KondisiBadge.astro';
 import NotFoundView from '../../components/NotFoundView.astro';
 
 const slug = Astro.params.slug ?? '';
-const ditemukan = getUnit(slug);
+const ditemukan = await getUnit(slug);
 
 // Unit yang belum lolos review tidak boleh bocor lewat URL, meskipun pembeli
 // menebak slug-nya. Hanya seller-nya sendiri yang boleh membukanya lewat /akun.
@@ -23,8 +23,8 @@ const judulSeo = unit ? `${unit.nama} ${unit.kapasitas}` : 'Unit tidak ditemukan
 const pesanWa = unit
   ? `Halo, saya tertarik dengan ${unit.nama} (${gabung([unit.kapasitas, unit.warna])}), ${rupiah(unit.harga)}. Masih tersedia?\n${new URL(`/hp/${unit.slug}`, Astro.site ?? 'http://localhost:8096').href}`
   : '';
-const site = ambilSite();
-const nomorWaUnit = unit ? waKontak(unit, site.whatsapp) : '';
+const site = await ambilSite();
+const nomorWaUnit = unit ? await waKontak(unit, site.whatsapp) : '';
 const linkWaUnit = unit ? linkWa(pesanWa, nomorWaUnit, site.nama) : null;
 const linkWaSerupa = unit ? linkWa(`Halo, ${unit.nama} sudah terjual. Ada unit lain yang mirip?`, nomorWaUnit, site.nama) : null;
 const ringkas = unit ? gabung([unit.kapasitas, unit.ram, unit.warna]) : '';
@@ -155,12 +155,28 @@ const SPESIFIKASI = unit
               {
                 unit.tersedia ? (
                   linkWaUnit && (
-                    <a
-                      href={`/go/${unit.slug}`}
-                      class="target-sentuh inline-flex w-full items-center justify-center rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800"
-                    >
-                      Tanya lewat WhatsApp
-                    </a>
+                    <div class="flex flex-col gap-2">
+                      <a
+                        href={`/go/${unit.slug}`}
+                        class="target-sentuh inline-flex w-full items-center justify-center gap-2 rounded-md bg-aksi px-5 text-sm font-semibold text-white hover:bg-emerald-800"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4" aria-hidden="true">
+                          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                        </svg>
+                        Tanya lewat WhatsApp
+                      </a>
+                      <button
+                        type="button"
+                        id="btn-salin-tautan"
+                        class="target-sentuh inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-300 px-5 text-sm font-semibold text-stone-900 hover:bg-stone-100 cursor-pointer transition-colors"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 text-stone-600" aria-hidden="true">
+                          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                        </svg>
+                        <span id="teks-salin-tautan">Salin Tautan Produk</span>
+                      </button>
+                    </div>
                   )
                 ) : (
                   linkWaSerupa && (

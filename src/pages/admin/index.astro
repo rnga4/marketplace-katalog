@@ -20,7 +20,7 @@ import { waValid } from '../../data/site';
 import { cekCsrf, teksForm, NOTIF } from '../../lib/forms';
 import { bacaSesi } from '../../lib/auth';
 
-const sesi = bacaSesi(Astro.cookies);
+const sesi = await bacaSesi(Astro.cookies);
 const csrf = sesi?.csrf ?? '';
 
 let notif = Astro.url.searchParams.get('notif');
@@ -32,35 +32,34 @@ if (Astro.request.method === 'POST') {
   } else {
     const aksi = teksForm(fd, 'aksi');
     const slug = teksForm(fd, 'slug');
-    const unit = slug ? getUnit(slug) : null;
+    const unit = slug ? await getUnit(slug) : null;
     if (aksi === 'toggle' && unit) {
-      setTersedia(slug, !unit.tersedia);
+      await setTersedia(slug, !unit.tersedia);
       return Astro.redirect('/admin?notif=statusubah');
     }
     if (aksi === 'hapus' && unit) {
-      hapusUnit(slug);
+      await hapusUnit(slug);
       return Astro.redirect('/admin?notif=terhapus');
     }
     return Astro.redirect('/admin');
   }
 }
 
-const semua = listSemuaUnits();
+const semua = await listSemuaUnits();
 // Nama penjual untuk semua unit milik seller, diambil lewat join per status
 // supaya daftar ini tidak melakukan satu query per unit.
 const penjual = new Map(
-  [...listAntrean('menunggu'), ...listAntrean('tayang'), ...listAntrean('tolak')].map((u) => [
-    u.slug,
-    u,
-  ]),
+  (
+    await Promise.all([listAntrean('menunggu'), listAntrean('tayang'), listAntrean('tolak')])
+  ).flat().map((u) => [u.slug, u]),
 );
-const jmlAntrean = jumlahAntrean().menunggu;
-const jmlSeller = jumlahSellerMenunggu();
-const klik = hitungKlik(30);
+const jmlAntrean = (await jumlahAntrean()).menunggu;
+const jmlSeller = await jumlahSellerMenunggu();
+const klik = await hitungKlik(30);
 const mintaHapus = Astro.url.searchParams.get('hapus');
-const unitHapus = mintaHapus ? getUnit(mintaHapus) : null;
+const unitHapus = mintaHapus ? await getUnit(mintaHapus) : null;
 const infoNotif = notif ? NOTIF[notif] ?? null : null;
-const waSiap = waValid(ambilSite().whatsapp);
+const waSiap = waValid((await ambilSite()).whatsapp);
 ---
 
 <AdminLayout title="Unit" notif={infoNotif}>

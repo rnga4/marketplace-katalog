@@ -8,10 +8,12 @@ RUN npm ci
 
 COPY . .
 ARG SITE_URL=http://localhost:8096
+ARG SECURITY_ALLOWED_HOST=
 ENV SITE_URL=$SITE_URL
+ENV SECURITY_ALLOWED_HOST=$SECURITY_ALLOWED_HOST
 RUN npm run build
 
-# Tahap 2: runtime aplikasi Node (Astro SSR + SQLite).
+# Tahap 2: runtime aplikasi Node (Astro SSR + Postgres).
 FROM node:22-alpine AS app
 
 RUN apk add --no-cache su-exec
@@ -33,10 +35,11 @@ ENV PORT=3000 \
 
 EXPOSE 3000
 
-# File DB & foto disimpan di volume /data (bind ./data).
+# Hanya foto yang tersisa di volume /data (bind ./data). Data situs,
+# termasuk session secret dan kata sandi admin, ada di Postgres.
 VOLUME ["/data"]
 
-# Entrypoint: siapkan folder + seed foto bila kosong, lalu jalan sebagai user node.
+# Entrypoint: siapkan folder foto + seed bila kosong, lalu jalan sebagai user node.
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Tahap 3: gerbang Nginx untuk aset statis hash + foto, sisanya di-proxy ke app.

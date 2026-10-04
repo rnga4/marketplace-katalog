@@ -16,7 +16,7 @@ interface Props {
   kembali?: { href: string; label: string } | null;
 }
 
-const site = ambilSite();
+const site = await ambilSite();
 
 const {
   title = site.namaLengkap,

@@ -14,9 +14,9 @@ import { normalisasiWa, waValid, inisial } from '../../data/site';
 import { cekCsrf, teksForm, NOTIF } from '../../lib/forms';
 
 const pengguna = Astro.locals.pengguna!;
-const sesi = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const sesi = await bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 const csrf = sesi?.csrf ?? '';
-const lapak = ambilLapak(pengguna.id);
+const lapak = await ambilLapak(pengguna.id);
 
 let galat: string | null = null;
 let ok: string | null = null;
@@ -38,7 +38,7 @@ if (Astro.request.method === 'POST') {
       galat = 'Nomor WhatsApp tidak valid.';
     } else {
       try {
-        simpanLapak(pengguna.id, { nama, whatsapp, deskripsi, lokasi });
+        await simpanLapak(pengguna.id, { nama, whatsapp, deskripsi, lokasi });
         return Astro.redirect('/akun/toko?notif=tokosimpan');
       } catch (err) {
         galat = err instanceof Error ? err.message : 'Gagal menyimpan.';
@@ -57,10 +57,10 @@ if (Astro.request.method === 'POST') {
     } else if (baru !== ulangi) {
       galat = 'Ulangi kata sandi tidak sama.';
     } else {
-      setKataSandiPengguna(pengguna.id, baru);
+      await setKataSandiPengguna(pengguna.id, baru);
       // Versi sesi naik, jadi token lama tidak berlaku lagi. Terbitkan token
       // baru untuk perangkat ini supaya seller tidak ikut terlempar keluar.
-      const segar = ambilPengguna(pengguna.id);
+      const segar = await ambilPengguna(pengguna.id);
       Astro.cookies.set(
         COOKIE_AKUN,
         buatToken(pengguna.id, 'seller', sesi?.csrf ?? buatCsrf(), segar?.sesiVersi ?? 0),
@@ -86,7 +86,7 @@ if (Astro.request.method === 'POST') {
       try {
         const lama = lapak.foto;
         const nama = await simpanFoto(file, lapak.slug);
-        setFotoLapak(pengguna.id, nama);
+        await setFotoLapak(pengguna.id, nama);
         // File lama dihapus setelah yang baru tersimpan, supaya kalau unggah
         // gagal foto lama tidak ikut hilang.
         if (lama) hapusFoto(lama);
@@ -97,7 +97,7 @@ if (Astro.request.method === 'POST') {
     }
   } else if (aksi === 'hapusfoto') {
     if (lapak?.foto) {
-      setFotoLapak(pengguna.id, '');
+      await setFotoLapak(pengguna.id, '');
       hapusFoto(lapak.foto);
     }
     return Astro.redirect('/akun/toko?notif=fotohapus');

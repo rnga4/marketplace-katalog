@@ -11,15 +11,16 @@ function escXml(value: string): string {
     .replace(/'/g, '&apos;');
 }
 
-export const GET: APIRoute = ({ site }) => {
+export const GET: APIRoute = async ({ site }) => {
   const origin = site?.origin ?? 'http://localhost:8096';
   // Halaman lapak ikut dipasang supaya profil seller bisa ditemukan lewat
   // pencarian, bukan cuma lewat katalog.
+  const [unit, lapak] = await Promise.all([listUnits(), listLapakTayang()]);
   const pages = [
     '',
     '/katalog',
-    ...listUnits().map((u) => `/hp/${u.slug}`),
-    ...listLapakTayang().map((l) => `/lapak/${l.slug}`),
+    ...unit.map((u) => `/hp/${u.slug}`),
+    ...lapak.map((l) => `/lapak/${l.slug}`),
   ];
   const isi = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

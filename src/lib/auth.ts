@@ -16,8 +16,14 @@ export const COOKIE_ADMIN = 'hp_admin';
 export const COOKIE_AKUN = 'hp_akun';
 export const LAMA_SESI = 7 * HARI;
 
-function tanda(data: string): string {
-  return createHmac('sha256', ambilSessionSecret()).update(data).digest('hex');
+/**
+ * Tanda tangan HMAC. `ambilSessionSecret` sekarang async karena rahasia ini
+ * diambil dari database, jadi seluruh jalur penandatangan ikut async. Nilainya
+ * sendiri di-cache di db.ts, jadi setelah pembacaan pertama tidak ada query
+ * database lagi untuk setiap pencocokan token.
+ */
+async function tanda(data: string): Promise<string> {
+  return createHmac('sha256', await ambilSessionSecret()).update(data).digest('hex');
 }
 
 export function cookieAman(req: Request, url: URL): boolean {
@@ -38,18 +44,18 @@ export interface Sesi {
 }
 
 /** Token seller dan admin sama bentuknya; peran ikut di dalamnya. */
-export function buatToken(
+export async function buatToken(
   penggunaId: number,
   peran: Peran,
   csrf: string,
   versi: number,
   ttlMs: number = LAMA_SESI,
-): string {
+): Promise<string> {
   const payload = `${penggunaId}.${peran}.${csrf}.${Date.now() + ttlMs}.${versi}`;
-  return `${Buffer.from(payload).toString('base64url')}.${tanda(payload)}`;
+  return `${Buffer.from(payload).toString('base64url')}.${await tanda(payload)}`;
 }
 
-export function cekToken(token: string | undefined): Sesi | null {
+export async function cekToken(token: string | undefined): Promise<Sesi | null> {
   if (!token) return null;
   const [b64, sig] = token.split('.');
   if (!b64 || !sig) return null;
@@ -60,7 +66,7 @@ export function cekToken(token: string | undefined): Sesi | null {
     return null;
   }
   const uji = Buffer.from(sig);
-  const harapan = Buffer.from(tanda(payload));
+  const harapan = Buffer.from(await tanda(payload));
   if (uji.length !== harapan.length || !timingSafeEqual(uji, harapan)) return null;
 
   const bagian = payload.split('.');
@@ -97,17 +103,17 @@ export interface PembacaCookie {
  * Ambil sesi dari objek cookies Astro (Astro.cookies). Peran yang diminta
  * dicek di sini, jadi satu token tidak bisa dipakai di area lain.
  */
-export function bacaSesi(
+export async function bacaSesi(
   cookies: PembacaCookie,
   cookie: string = COOKIE_ADMIN,
   peranDiminta: Peran = 'admin',
-): Sesi | null {
-  const sesi = cekToken(cookies.get(cookie)?.value);
+): Promise<Sesi | null> {
+  const sesi = await cekToken(cookies.get(cookie)?.value);
   if (!sesi) return null;
   if (sesi.peran !== peranDiminta) return null;
   // Token lama tanpa id tidak punya versi; biarkan sampai kedaluwarsa.
   if (sesi.penggunaId !== null) {
-    const pengguna = ambilPengguna(sesi.penggunaId);
+    const pengguna = await ambilPengguna(sesi.penggunaId);
     if (!pengguna || pengguna.sesiVersi !== sesi.versi) return null;
   }
   return sesi;

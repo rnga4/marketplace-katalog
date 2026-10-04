@@ -16,8 +16,8 @@ interface Props {
 
 const { title, pengguna, notif = null } = Astro.props;
 const sesi = Astro.locals.pengguna ?? pengguna;
-const lapak = ambilLapak(sesi.id);
-const sesiAkun = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const lapak = await ambilLapak(sesi.id);
+const sesiAkun = await bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
 const csrf = sesiAkun?.csrf ?? '';
 const aktif = Astro.url.pathname.replace(/\/$/, '') || '/akun';
 const namaToko = lapak?.nama ?? 'Toko saya';
@@ -53,7 +53,7 @@ const namaToko = lapak?.nama ?? 'Toko saya';
               Tambah produk
             </a>
           </nav>
-          <MenuAkun nama={namaToko} foto={lapak?.foto} csrf={csrf} kelas="md:ml-auto" />
+          <MenuAkun nama={namaToko} foto={lapak?.foto} csrf={csrf} lapakSlug={lapak?.slug} kelas="md:ml-auto" />
         </div>
         <nav class="flex flex-wrap items-center gap-1 md:hidden" aria-label="Navigasi toko mobile">
           <a

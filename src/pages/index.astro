@@ -16,11 +16,11 @@ if (q.has('cari') || q.has('lapak') || q.has('halaman')) {
   return Astro.redirect(`/katalog?${q.toString()}`, 301);
 }
 
-const site = ambilSite();
-const stat = statistikRingkas();
-const lapak = listLapakTersedia();
+const site = await ambilSite();
+const stat = await statistikRingkas();
+const lapak = await listLapakTersedia();
 // Beranda cuma menampilkan info terbaru. Arsip lengkap cukup di panel admin.
-const pengumuman = listPengumuman(true).slice(0, 4);
+const pengumuman = (await listPengumuman(true)).slice(0, 4);
 ---
 
 <BaseLayout>

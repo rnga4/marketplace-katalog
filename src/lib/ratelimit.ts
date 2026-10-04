@@ -1,4 +1,4 @@
-import { db } from './db';
+import { ambilSatu, query } from './koneksi';
 
 /**
  * Rate limit login disimpan di database, bukan di memori proses. Versi
@@ -31,32 +31,35 @@ export const ipPengguna = (request: Request, alamatClient: string): string =>
  * mengetik lima nomor berbeda ikut terkunci setelah lima percobaan, padahal
  * yang dilindungi di sini adalah satu akun, bukan satu mesin.
  */
-export const terkunci = (kunci: Kunci): boolean => {
+export const terkunci = async (kunci: Kunci): Promise<boolean> => {
   const sekarang = Date.now();
   for (const k of kunci) {
-    const e = db.prepare('SELECT n, buka FROM percobaan WHERE kunci = ?').get(k) as
-      | { n: number; buka: number }
-      | undefined;
-    if (e && e.buka > sekarang && e.n >= MAKS) return true;
+    const e = await ambilSatu<{ n: number; buka: string }>(
+      'SELECT n, buka FROM percobaan WHERE kunci = ?',
+      [k],
+    );
+    if (e && Number(e.buka) > sekarang && e.n >= MAKS) return true;
   }
   return false;
 };
 
-export const catatGagal = (kunci: Kunci): void => {
+export const catatGagal = async (kunci: Kunci): Promise<void> => {
   const sekarang = Date.now();
   const kedaluwarsa = sekarang + KUNCI_MS;
   // Satu statement upsert supaya kenaikan penghitung tidak hilang saat dua
   // percobaan datang bersamaan (baca-ubah-tulis bisa saling menimpa).
+  // Penomoran placeholder ditangani `kePlaceholderPg`, jadi di sini tetap `?`
+  // semua. Menulis `$1` manual di sebelah `?` akan membuat nomor parameter
+  // meloncat dan query gagal saat dijalankan.
   const sql = `
     INSERT INTO percobaan (kunci, n, buka) VALUES (?, 1, ?)
     ON CONFLICT(kunci) DO UPDATE SET
       n = CASE WHEN percobaan.buka > ? THEN percobaan.n + 1 ELSE 1 END,
       buka = ?
   `;
-  const simpan = db.prepare(sql);
-  for (const k of kunci) simpan.run(k, kedaluwarsa, sekarang, kedaluwarsa);
+  for (const k of kunci) await query(sql, [k, kedaluwarsa, sekarang, kedaluwarsa]);
 };
 
-export const bersihkan = (kunci: Kunci): void => {
-  for (const k of kunci) db.prepare('DELETE FROM percobaan WHERE kunci = ?').run(k);
+export const bersihkan = async (kunci: Kunci): Promise<void> => {
+  for (const k of kunci) await query('DELETE FROM percobaan WHERE kunci = ?', [k]);
 };

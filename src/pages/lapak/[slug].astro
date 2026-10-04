@@ -7,12 +7,12 @@ import UnitHpCard from '../../components/UnitHpCard.astro';
 import NotFoundView from '../../components/NotFoundView.astro';
 
 const slug = Astro.params.slug ?? '';
-const lapak = ambilLapakBySlug(slug);
-const pemilik = lapak ? ambilPengguna(lapak.penggunaId) : null;
+const lapak = await ambilLapakBySlug(slug);
+const pemilik = lapak ? await ambilPengguna(lapak.penggunaId) : null;
 
 // Lapak yang ditangguhkan atau pemiliknya tidak ada lagi tidak ditampilkan.
 const aktif = lapak && pemilik && pemilik.status === 'aktif';
-const semua = aktif ? listUnitsLapak(lapak.penggunaId) : [];
+const semua = aktif ? await listUnitsLapak(lapak.penggunaId) : [];
 
 if (!aktif) {
   Astro.response.status = 404;

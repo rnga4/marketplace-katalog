@@ -13,10 +13,10 @@ import { rupiah } from '../../lib/format';
 import { bacaSesi, COOKIE_AKUN } from '../../lib/auth';
 
 const pengguna = Astro.locals.pengguna!;
-const sesiAkun = bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
-const semua = listUnitsPemilik(pengguna.id);
-const lapak = ambilLapak(pengguna.id);
-const klik = hitungKlik(30);
+const sesiAkun = await bacaSesi(Astro.cookies, COOKIE_AKUN, 'seller');
+const semua = await listUnitsPemilik(pengguna.id);
+const lapak = await ambilLapak(pengguna.id);
+const klik = await hitungKlik(30);
 
 const notifMap: Record<string, { jenis: 'ok' | 'err'; teks: string }> = {
   tersimpan: { jenis: 'ok', teks: 'Produk dikirim untuk ditinjau.' },
@@ -30,6 +30,9 @@ const notif = notifMap[Astro.url.searchParams.get('notif') ?? ''] ?? null;
 const menunggu = semua.filter((u) => u.moderasi === 'menunggu').length;
 const tayang = semua.filter((u) => u.moderasi === 'tayang').length;
 const ditolak = semua.filter((u) => u.moderasi === 'tolak').length;
+const totalNilai = semua
+  .filter((u) => u.moderasi === 'tayang' && u.tersedia)
+  .reduce((sum, u) => sum + (u.harga ?? 0), 0);
 
 const hapusSlug = Astro.url.searchParams.get('hapus');
 const unitHapus = hapusSlug ? semua.find((u) => u.slug === hapusSlug) ?? null : null;
@@ -58,7 +61,7 @@ function warna(m: Moderasi): string {
 
   {
     semua.length > 0 && (
-      <dl class="mb-6 grid grid-cols-3 gap-2 sm:gap-4">
+      <dl class="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
         <div class="rounded-md border border-garis px-3 py-2 sm:px-4 sm:py-3">
           <dt class="text-xs text-stone-600">Tayang</dt>
           <dd class="text-lg font-bold text-stone-900 sm:text-xl">{tayang}</dd>
@@ -71,7 +74,27 @@ function warna(m: Moderasi): string {
           <dt class="text-xs text-stone-600">Ditolak</dt>
           <dd class="text-lg font-bold text-stone-900 sm:text-xl">{ditolak}</dd>
         </div>
+        <div class="rounded-md border border-garis px-3 py-2 sm:px-4 sm:py-3">
+          <dt class="text-xs text-stone-600">Nilai Aset Tayang</dt>
+          <dd class="truncate text-lg font-bold text-stone-900 sm:text-xl" title={rupiah(totalNilai)}>
+            {totalNilai > 0 ? rupiah(totalNilai) : 'Rp0'}
+          </dd>
+        </div>
       </dl>
+    )
+  }
+
+  {
+    semua.length > 5 && (
+      <div class="mb-4">
+        <label for="filter-produk-seller" class="sr-only">Cari produk saya</label>
+        <input
+          id="filter-produk-seller"
+          type="search"
+          placeholder="Cari produk di tokomu (nama, merek, harga...)"
+          class="target-sentuh w-full rounded-md border border-stone-400 bg-dasar px-3 text-sm text-stone-900 placeholder:text-stone-500 focus:border-aksi-teks focus:outline-none"
+        />
+      </div>
     )
   }
 
@@ -82,7 +105,7 @@ function warna(m: Moderasi): string {
         <p class="mt-1 text-sm text-stone-600">Tambahkan unit HP yang ingin kamu jual. Setelah dikirim, produknya ditinjau dulu sebelum tayang.</p>
       </div>
     ) : (
-      <ul class="flex flex-col gap-3">
+      <ul id="daftar-produk-seller" class="flex flex-col gap-3">
         {semua.map((u) => {
           const coret = hargaTercoret(u);
           const sedangKonfirmasi = unitHapus?.slug === u.slug;
@@ -175,3 +198,17 @@ function warna(m: Moderasi): string {
     }
   </script>
 )}
+
+<script>
+  const filterInput = document.getElementById('filter-produk-seller') as HTMLInputElement | null;
+  if (filterInput) {
+    const listItems = document.querySelectorAll<HTMLElement>('#daftar-produk-seller > li');
+    filterInput.addEventListener('input', () => {
+      const q = filterInput.value.toLowerCase().trim();
+      for (const item of listItems) {
+        const teks = item.textContent?.toLowerCase() ?? '';
+        item.style.display = teks.includes(q) ? '' : 'none';
+      }
+    });
+  }
+</script>
