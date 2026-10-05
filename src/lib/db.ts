@@ -95,7 +95,12 @@ mkdirSync(FOTO_DIR, { recursive: true });
 /* ----- Statistik klik ----- */
 
 export async function catatKlik(slug: string): Promise<void> {
-  await query('INSERT INTO klik (slug, ts) VALUES (?, ?)', [slug, Date.now()]);
+  // `segarkanCache: false`: klik tidak mengubah HTML apa pun, dan tulisan ini
+  // terjadi di setiap orang yang menekan tombol WhatsApp. Kalau ikut mengosongkan
+  // cache, satu klik akan membuat seluruh halaman publik dirender ulang.
+  await query('INSERT INTO klik (slug, ts) VALUES (?, ?)', [slug, Date.now()], {
+    segarkanCache: false,
+  });
 }
 
 /** Jumlah klik WA per unit dalam N hari terakhir. */

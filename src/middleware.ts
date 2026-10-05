@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 
 import { bacaSesi, COOKIE_ADMIN, COOKIE_AKUN } from './lib/auth';
+import { ambilCache, denganCache, jalurLayak, kunciCache, type Entri } from './lib/cacheHalaman';
 import { ambilPengguna, siapkanDatabase, type Pengguna } from './lib/db';
 
 const LOGIN_ADMIN = '/admin/login';
@@ -26,8 +27,78 @@ async function sellerAktif(penggunaId: number): Promise<Pengguna | null> {
   return p && p.status === 'aktif' && p.peran === 'seller' ? p : null;
 }
 
+/**
+ * Halaman yang tersimpan di cache dirender ulang sebagai respons baru dari HTML
+ * yang sudah ada. Status dan seluruh header ikut disalin, termasuk CSP yang
+ * dipasang Astro, supaya halaman yang dilayani cache tidak lebih longgar
+ * daripada yang baru saja dirender.
+ *
+ * `content-length` dan `content-encoding` sengaja dibuang: keduanya
+ * menyatakan jumlah byte dari respons asli, bukan dari teks yang kita simpan.
+ * Membiarkannya membuat nginx mengira halaman lebih panjang atau lebih pendek
+ * dari aslinya.
+ */
+function keRespons(entri: Entri): Response {
+  const header = new Headers(entri.header);
+  header.delete('content-length');
+  header.delete('content-encoding');
+  return new Response(entri.html, { status: entri.status, headers: header });
+}
+
+/**
+ * Tandai respons yang dilayani cache supaya bisa dibedakan dari yang baru
+ * dirender tanpa harus menunggu parameter cache. Hanya dipasang di halaman
+ * yang memang boleh di-cache, jadi halaman ber-sesi tidak pernah
+ * menyebutkannya.
+ */
+function tandaiCache(res: Response, hit: boolean): Response {
+  const header = new Headers(res.headers);
+  header.set('x-cache', hit ? 'HIT' : 'MISS');
+  return new Response(res.body, { status: res.status, headers: header });
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const path = context.url.pathname;
+
+  /* Halaman publik tanpa sesi dilayani dari cache sebelum menyentuh database
+     sama sekali, termasuk `siapkanDatabase()`. Karena setiap fungsi tulis
+     mengosongkan cache, unit yang baru diunggah tidak lagi menunggu masa ttl
+     supaya muncul.
+
+     Halaman ber-sesi sengaja dilewati: header memuat nama dan foto toko, jadi
+     satu seller dan satu pengunjung tidak boleh menerima HTML yang sama. */
+  const tanpaSesi =
+    !context.cookies.has(COOKIE_ADMIN) && !context.cookies.has(COOKIE_AKUN);
+  if (
+    context.request.method === 'GET' &&
+    tanpaSesi &&
+    jalurLayak(path, context.url.searchParams)
+  ) {
+    const kunci = kunciCache(path, context.url.searchParams);
+    const tersimpan = ambilCache(kunci);
+    if (tersimpan) return tandaiCache(keRespons(tersimpan), true);
+
+    // Disimpan di luar closure supaya hanya request yang benar-benar memulai
+    // render yang boleh memakainya. Kalau render ini tidak menghasilkan entri
+    // (misalnya 404 atau respons yang membawa Set-Cookie), pemanggil lain
+    // harus merender sendiri dan tidak boleh memakai respons milik orang lain.
+    let responsMilikSendiri: Response | null = null;
+    const { entri } = await denganCache(kunci, async () => {
+      await siapkanDatabase();
+      const res = await next();
+      responsMilikSendiri = res;
+      if (res.status !== 200 || res.headers.has('set-cookie')) return null;
+      // Body yang sudah dikompresi tidak bisa dibaca sebagai teks lalu ditulis
+      // balik tanpa mengubah byte-nya, jadi respons terkompresi dilewati.
+      if (res.headers.has('content-encoding')) return null;
+      const header: [string, string][] = [];
+      res.headers.forEach((v, k) => header.push([k, v]));
+      return { html: await res.text(), status: res.status, header, disimpan: Date.now() };
+    });
+    if (entri) return tandaiCache(keRespons(entri), false);
+    if (responsMilikSendiri) return responsMilikSendiri;
+    return next();
+  }
 
   // Persiapan database (akun admin, pemangkasan baris basi, seed) dijalankan
   // di sini, bukan di modul: setiap proses baru pasti menjalankannya satu kali
