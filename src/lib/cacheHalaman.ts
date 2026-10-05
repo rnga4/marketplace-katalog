@@ -42,9 +42,6 @@ const simpanan = new Map<string, Entri>();
  */
 const sedang = new Map<string, Promise<Entri | null>>();
 
-let hit = 0;
-let leta = 0;
-
 /**
  * Halaman yang layak disimpan. Beranda dan katalog membaca `searchParams` untuk
  * pencarian dan filter, jadi kuncinya harus memuat query string utuh. Parameter
@@ -66,16 +63,11 @@ export function kunciCache(path: string, params: URLSearchParams): string {
 /** Entri yang masih layak pakai, atau `undefined`. Yang kedaluwarsa langsung dibuang. */
 export function ambilCache(kunci: string): Entri | undefined {
   const e = simpanan.get(kunci);
-  if (!e) {
-    leta++;
-    return undefined;
-  }
+  if (!e) return undefined;
   if (Date.now() - e.disimpan > TTL_MS) {
     simpanan.delete(kunci);
-    leta++;
     return undefined;
   }
-  hit++;
   return e;
 }
 
@@ -117,7 +109,8 @@ export async function denganCache(
 }
 
 /**
- * Kosongkan seluruh cache. Dipanggil dari setiap fungsi tulis di `db.ts`.
+ * Kosongkan seluruh cache. Dipanggil dari lapisan driver di `koneksi.ts`,
+ * setiap kali ada statement yang mengubah isi database.
  *
  * Sengaja tidak menerima daftar halaman yang terpengaruh. Menghitung halaman
  * mana yang berubah mudah salah dan baru ketahuan setelah katalog menampilkan
@@ -126,9 +119,4 @@ export async function denganCache(
  */
 export function bustCache(): void {
   simpanan.clear();
-}
-
-/** Angka untuk mengukur: berapa yang dilayani cache, berapa yang merender. */
-export function statistikCache(): { entri: number; hit: number; leta: number } {
-  return { entri: simpanan.size, hit, leta };
 }
