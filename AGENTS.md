@@ -28,5 +28,20 @@ To update antislop later: `npx antislop-ai --update`, or run `npx antislop-ai` a
   dibalik tanpa migrate ulang nilainya.
 - `ADMIN_PASSWORD` hanya berlaku saat tabel `pengaturan` masih kosong. Setelah
   migrasi, kata sandi admin adalah milik lama, bukan nilai env itu.
-- Belum dikerjakan: SSG dengan rebuild-on-write, dan named Cloudflare Tunnel
-  (sekarang masih quick tunnel `*.trycloudflare.com`).
+- Backup nightly ada di `~/bin/backup-hp.sh` (cron 02:30). Sejak 5 Oktober 2026
+  isinya `pg_dump` dari container `handphone-second-db` plus `rsync` folder foto,
+  bukan lagi `VACUUM INTO` dari `data/hp.db`. Untuk beberapa hari pertama setelah migrasi,
+  script lama tetap melaporkan "backup ok" setiap pagi sambil menyalin SQLite yang
+  sudah beku; jangan dikembalikan ke bentuk itu. Script lamanya masih ada di
+  `~/bin/backup-hp.sh.bak-sqlite` hanya bahan pembanding.
+- Script backup menulis ke `hp-<tanggal>.sementara` dulu dan baru memindahkan ke
+  nama akhir kalau pemeriksaannya lulus, sebab dump yang gagal menimpa cadangan
+  bagus dengan berkas korup yang tetap terlihat seperti cadangan. Pemeriksaannya
+  mengembalikan dump ke database sementara lalu membandingkan hitungan baris
+  semua tabel yang ada di `pg_tables`; kalau `psql` gagal, hasilnya kosong dan itu
+  dianggap gagal, bukan "tabel kosong".
+- Belum dikerjakan: named Cloudflare Tunnel (sekarang masih quick tunnel
+  `*.trycloudflare.com`, dijalankan manual di host dan mati kalau prosesnya
+  berhenti). Cache halaman publik sudah selesai 5 Oktober 2026; SSG penuh
+  tidak dipakai karena Header membaca cookie sesi dan beranda/katalog membaca
+  `searchParams`.
